@@ -244,6 +244,35 @@ public static partial class NexusMods
         return id;
     }
 
+    /// <summary>
+    /// The short name Nexus Mods gives a game, found by the game's name, such as "phantombladezero" for "Phantom Blade
+    /// Zero"; null when no game there has that name. A demo or playtest is matched with the full game.
+    /// </summary>
+    public static async Task<string?> FindGameDomainAsync(HttpClient http, string name, CancellationToken cancellation = default)
+    {
+        var wanted = GameKey(name);
+        var trimmed = DemoSuffix().Replace(name, "").Trim();
+        foreach (var search in trimmed.Length > 0 && trimmed != name.Trim() ? new[] { name, trimmed } : [name])
+        {
+            var escaped = JsonSerializer.Serialize(search.Trim());
+            var data = await QueryAsync(http,
+                $$"""query { games(filter: { name: [{ value: {{escaped}}, op: WILDCARD }] }, count: 20) { nodes { name domainName } } }""",
+                cancellation);
+            var key = GameKey(search);
+            foreach (var node in data.GetProperty("games").GetProperty("nodes").EnumerateArray())
+            {
+                if (node.GetProperty("name").GetString() is { } found && (GameKey(found) == key || GameKey(found) == wanted)
+                    && node.GetProperty("domainName").GetString() is { Length: > 0 } domain)
+                    return domain.ToLowerInvariant();
+            }
+        }
+        return null;
+    }
+
+    /// <summary>A game's name with only its letters and digits, so "Phantom Blade: Zero" matches "Phantom Blade Zero".</summary>
+    private static string GameKey(string name) =>
+        new(name.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
+
     private static async Task<JsonElement> QueryAsync(HttpClient http, string query, CancellationToken cancellation)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, GraphQlUrl) { Content = JsonContent.Create(new { query }) };
@@ -292,4 +321,7 @@ public static partial class NexusMods
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex Whitespace();
+
+    [GeneratedRegex(@"[\s:\-–]*\b(demo|playtest)\s*$", RegexOptions.IgnoreCase)]
+    private static partial Regex DemoSuffix();
 }

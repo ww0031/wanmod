@@ -54,7 +54,7 @@
             </ItemsControl>
         </DockPanel>
         <TextBlock Margin="2,2,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap" TextTrimming="None"
-                   Text="{ui:Loc 'Adult content is never shown here. Texts are translated for free by Google Translate.'}" />
+                   Text="{Binding ServiceNote}" />
         <TextBlock Margin="2,4,0,0" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Info}" Text="{Binding SearchNote}"
                    Visibility="{Binding SearchNote, Converter={StaticResource VisibleIfSet}}" />
         <TextBlock Margin="2,4,0,0" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Warning}" TextWrapping="Wrap" TextTrimming="None"

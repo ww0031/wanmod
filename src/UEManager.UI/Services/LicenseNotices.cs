@@ -36,15 +36,6 @@ internal static class LicenseNotices
         Read(() => L.T("Copyright and additional terms"), LegalPrefix + "NOTICE.md"),
     ];
 
-    /// <summary>The entries of CONTRIBUTORS.md: its "- " lines, such as "KintaroModding: creator and maintainer".</summary>
-    public static IReadOnlyList<string> Contributors() =>
-        Read(() => "", LegalPrefix + "CONTRIBUTORS.md").Text
-            .Split('\n')
-            .Select(line => line.Trim())
-            .Where(line => line.StartsWith("- ", StringComparison.Ordinal))
-            .Select(line => line[2..].Trim())
-            .ToList();
-
     private static LicenseNotice Read(Func<string> name, string resource)
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resource)

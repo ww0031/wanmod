@@ -24,7 +24,34 @@ public sealed partial class MainViewModel
     /// <summary>The cards' names and summaries in the app's language, by the language and the text as the site has it.</summary>
     private readonly Dictionary<string, string> cardTexts = new(StringComparer.Ordinal);
 
-    private FreeTranslator Translator => translator ??= new FreeTranslator(Http, paths.TranslationsFile);
+    private FreeTranslator Translator => translator ??= new FreeTranslator(Http, paths.TranslationsFile) { Service = settings.TranslationService };
+
+    /// <summary>The choices of the Settings page's translation list.</summary>
+    public IReadOnlyList<TranslationServiceOption> TranslationServices =>
+    [
+        new(TranslationService.Auto, L.T("Automatic (Tencent in mainland China, Google elsewhere)")),
+        new(TranslationService.Tencent, L.T("Tencent Translate (works in mainland China)")),
+        new(TranslationService.Google, L.T("Google Translate")),
+    ];
+
+    public TranslationService SelectedTranslationService
+    {
+        get => settings.TranslationService;
+        set
+        {
+            if (value == settings.TranslationService)
+                return;
+            settings.TranslationService = value;
+            Translator.Service = value;
+            SaveSettings();
+            OnPropertyChanged();
+            browse?.RefreshServiceNote();
+        }
+    }
+
+    /// <summary>The name of a translation service in the app's language.</summary>
+    internal static string ServiceName(TranslationService service) =>
+        service == TranslationService.Tencent ? L.T("Tencent Translate") : L.T("Google Translate");
 
     /// <summary>The Browse page; null for a game with no Nexus Mods page.</summary>
     public NexusBrowseViewModel? Browse => browse ??= NexusGame is { } game ? new NexusBrowseViewModel(this, Http, Translator, game) : null;
@@ -214,3 +241,6 @@ public sealed partial class MainViewModel
             RefreshMods();
     }
 }
+
+/// <summary>A choice of the Settings page's translation list.</summary>
+public sealed record TranslationServiceOption(TranslationService Value, string Name);

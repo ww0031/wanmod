@@ -1,3 +1,5 @@
+using UEManager.Core.Mods;
+
 namespace UEManager.Core.Storage;
 
 /// <summary>User choices that survive a restart.</summary>
@@ -5,6 +7,9 @@ public sealed class AppSettings
 {
     /// <summary>The chosen language's code, such as "zh-CN"; null follows the Windows display language.</summary>
     public string? Language { get; set; }
+
+    /// <summary>The free service that translates mod texts from Nexus Mods.</summary>
+    public TranslationService TranslationService { get; set; }
 
     /// <summary>Install folder per game profile id, set when the user locates the game by hand.</summary>
     public Dictionary<string, string> GamePaths { get; set; } = new(StringComparer.OrdinalIgnoreCase);
@@ -34,6 +39,9 @@ public sealed class AppSettings
 
     /// <summary>The Mods page shows a compact table instead of cards with each mod's picture and summary from Nexus Mods.</summary>
     public bool ModsCompact { get; set; }
+
+    /// <summary>The game library lists the games by name instead of by the last time each was played.</summary>
+    public bool GamesByName { get; set; }
 
     /// <summary>The mods the Mods page shows by their state, "Enabled" or "Disabled"; null for all of them.</summary>
     public string? ModsState { get; set; }

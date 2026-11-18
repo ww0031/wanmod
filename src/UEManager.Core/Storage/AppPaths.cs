@@ -32,6 +32,12 @@ public sealed class AppPaths
 
     public string SettingsFile => Path.Combine(Root, "settings.json");
 
+    /// <summary>The games the player added to the game library.</summary>
+    public string LibraryFile => Path.Combine(Root, "library.json");
+
+    /// <summary>Pictures the player chose for games in the library.</summary>
+    public string CoversDir => Path.Combine(Root, "covers");
+
     public string LogsDir => Path.Combine(Root, "logs");
 
     /// <summary>Machine translations of mod texts from Nexus Mods, kept so each text is translated once.</summary>

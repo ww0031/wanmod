@@ -119,29 +119,31 @@
                     <TextBlock Margin="0,4,0,10" Style="{StaticResource Text.Path}" Text="{Binding GamePath}" />
                     <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Loc 'Mods folder', Tracked=True}" />
                     <TextBlock Margin="0,4,0,10" Style="{StaticResource Text.Path}" Text="{Binding ModsPath}" />
-                    <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Tracked 'UE4SS'}" />
-                    <StackPanel Margin="0,4,0,14" Orientation="Horizontal">
-                        <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}"
-                                   Text="{Binding Ue4ssText}" />
-                        <Button Margin="12,-4,0,-4" Padding="9,3" FontSize="12" Content="{ui:Loc 'Install UE4SS…'}" ui:Icon.Glyph="&#xE946;"
-                                Command="{Binding ShowUe4ssGuideCommand}"
-                                Visibility="{Binding IsUe4ssMissing, Converter={StaticResource Visible}}" />
-                        <Button Margin="12,-4,0,-4" Padding="9,3" FontSize="12" Style="{StaticResource Button.Primary}"
-                                Content="{Binding Ue4ssUpdateText}" ui:Icon.Glyph="&#xE896;" Command="{Binding UpdateUe4ssCommand}"
-                                Visibility="{Binding IsUe4ssUpdateAvailable, Converter={StaticResource Visible}}" />
-                    </StackPanel>
-                    <!-- UE4SS files that differ from the official build; a click lists them. -->
-                    <Button Margin="0,-4,0,14" HorizontalAlignment="Left" Style="{StaticResource Button.StatusBox}"
-                            Command="{Binding ShowUnofficialUe4ssCommand}"
-                            ToolTip="{ui:Loc 'Some UE4SS files differ from the official build. Click for the list.'}"
-                            Visibility="{Binding HasUnofficialUe4ss, Converter={StaticResource Visible}}"
-                            Foreground="{StaticResource Brush.Warning}" BorderBrush="{StaticResource Brush.Warning}"
-                            Background="{StaticResource Brush.WarningWash}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Text.Icon}" FontSize="12" Text="&#xE7BA;" />
-                            <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontSize="12" Text="{ui:Loc 'Unofficial UE4SS build'}" />
+                    <StackPanel Visibility="{Binding IsUnrealGame, Converter={StaticResource Visible}}">
+                        <TextBlock Style="{StaticResource Text.Caption}" Text="{ui:Tracked 'UE4SS'}" />
+                        <StackPanel Margin="0,4,0,14" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}"
+                                       Text="{Binding Ue4ssText}" />
+                            <Button Margin="12,-4,0,-4" Padding="9,3" FontSize="12" Content="{ui:Loc 'Install UE4SS…'}" ui:Icon.Glyph="&#xE946;"
+                                    Command="{Binding ShowUe4ssGuideCommand}"
+                                    Visibility="{Binding IsUe4ssMissing, Converter={StaticResource Visible}}" />
+                            <Button Margin="12,-4,0,-4" Padding="9,3" FontSize="12" Style="{StaticResource Button.Primary}"
+                                    Content="{Binding Ue4ssUpdateText}" ui:Icon.Glyph="&#xE896;" Command="{Binding UpdateUe4ssCommand}"
+                                    Visibility="{Binding IsUe4ssUpdateAvailable, Converter={StaticResource Visible}}" />
                         </StackPanel>
-                    </Button>
+                        <!-- UE4SS files that differ from the official build; a click lists them. -->
+                        <Button Margin="0,-4,0,14" HorizontalAlignment="Left" Style="{StaticResource Button.StatusBox}"
+                                Command="{Binding ShowUnofficialUe4ssCommand}"
+                                ToolTip="{ui:Loc 'Some UE4SS files differ from the official build. Click for the list.'}"
+                                Visibility="{Binding HasUnofficialUe4ss, Converter={StaticResource Visible}}"
+                                Foreground="{StaticResource Brush.Warning}" BorderBrush="{StaticResource Brush.Warning}"
+                                Background="{StaticResource Brush.WarningWash}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Text.Icon}" FontSize="12" Text="&#xE7BA;" />
+                                <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontSize="12" Text="{ui:Loc 'Unofficial UE4SS build'}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                     <WrapPanel>
                         <Button Margin="0,0,8,8" Content="{ui:Loc 'Open game folder'}" ui:Icon.Glyph="&#xE838;" Command="{Binding OpenGameFolderCommand}" />
                         <Button Margin="0,0,0,8" Content="{ui:Loc 'Open mods folder'}" ui:Icon.Glyph="&#xE838;" Command="{Binding OpenModFolderCommand}" />

@@ -46,6 +46,13 @@ public sealed class GameProfile
     public string LogicModsPath { get; init; } = "{Project}/Content/Paks/LogicMods";
 
     /// <summary>
+    /// A game not made with Unreal Engine (generic mode): no pak or UE4SS rule applies. A download goes as it is into
+    /// <see cref="ModsPath"/>, a folder below the install folder; a file of the game's own that it replaces is saved
+    /// first and put back when the mod is disabled or removed.
+    /// </summary>
+    public bool Generic { get; init; }
+
+    /// <summary>
     /// Folder of the game's shipping executable, where UE4SS is installed. A <c>*</c> in one part stands
     /// for any folder, as in <c>platform/*</c> for a game with a folder per store: the one that holds the
     /// shipping executable wins, the store's own first.

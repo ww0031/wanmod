@@ -40,6 +40,12 @@ public sealed partial class NexusBrowseViewModel : LocalizedObservableObject
     /// <summary>The game's short name on Nexus Mods, such as "phantombladezero".</summary>
     internal string Game { get; }
 
+    /// <summary>The line under the search box, with the name of the service that translates.</summary>
+    public string ServiceNote =>
+        L.F($"Adult content is never shown here. Texts are translated for free by {MainViewModel.ServiceName(translator.First)}.");
+
+    internal void RefreshServiceNote() => OnPropertyChanged(nameof(ServiceNote));
+
     internal RemoteImages Images { get; }
 
     public ObservableCollection<NexusBrowseItemViewModel> Items { get; } = [];
@@ -231,6 +237,7 @@ public sealed partial class NexusBrowseViewModel : LocalizedObservableObject
             for (var i = 0; i < items.Count; i++)
                 items[i].Translate(texts[3 * i], texts[3 * i + 1], texts[3 * i + 2]);
             TranslationNote = null;
+            RefreshServiceNote();
         }
         catch (ModException ex)
         {

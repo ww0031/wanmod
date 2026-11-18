@@ -56,10 +56,12 @@ public class SteamFileTests
                 "StateFlags"    "4"
                 "installdir"    "Phantom Blade Zero"
                 "buildid"       "20123456"
+                "LastPlayed"    "1794157063"
             }
             """;
 
-        Assert.Equal(("Phantom Blade Zero", "20123456"), SteamLibrary.ParseAppManifest(acf));
+        Assert.Equal(new SteamAppManifest("Phantom Blade Zero", "20123456", "4115450", "Test \"Quoted\" Game",
+            DateTimeOffset.FromUnixTimeSeconds(1794157063)), SteamLibrary.ParseAppManifest(acf));
     }
 
     [Fact]

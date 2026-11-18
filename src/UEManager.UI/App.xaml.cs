@@ -119,7 +119,8 @@ public partial class App : Application
         GameProfile profile;
         try
         {
-            profile = GameProfile.BuiltIn().FirstOrDefault()
+            // Until the game library opens a game: the game the app's artwork belongs to.
+            profile = GameLibrary.BuiltIn.FirstOrDefault(p => p.Id == "phantom-blade-zero") ?? GameLibrary.BuiltIn.FirstOrDefault()
                 ?? throw new InvalidDataException("This build contains no game profile.");
         }
         catch (InvalidDataException ex)

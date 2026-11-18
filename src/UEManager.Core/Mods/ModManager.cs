@@ -123,8 +123,10 @@ public sealed class ModManager
         {
             ArchiveStager.Stage(source, staging);
             var (name, version) = ModNaming.FromSource(source);
-            var scan = PackageScanner.Scan(staging, name, Game.ProjectFolder ?? Game.Profile.ProjectFolder,
-                Path.GetRelativePath(Game.RootPath, Game.BinariesPath).Replace('\\', '/'));
+            var scan = Game.Profile.Generic
+                ? PackageScanner.ScanAll(staging, name, Game.Profile.ModsPath)
+                : PackageScanner.Scan(staging, name, Game.ProjectFolder ?? Game.Profile.ProjectFolder,
+                    Path.GetRelativePath(Game.RootPath, Game.BinariesPath).Replace('\\', '/'));
             Log.Info($"Inspected '{source}': {scan.Packages.Count} part(s), {scan.IgnoredFileCount} other file(s).");
             return new InstallPreview(source, staging, scan, name, version);
         }
@@ -256,8 +258,12 @@ public sealed class ModManager
                 }
                 else if (File.Exists(Path.Combine(TargetFolder(target), Local(path))))
                 {
-                    // Most often the same mod put in by hand. It goes to the backups, so nothing of the player's is lost.
-                    inTheWay.Add((target, path));
+                    var file = Path.Combine(TargetFolder(target), Local(path));
+                    if (ue4ss is not null && ue4ss.ContainsKey(Path.GetRelativePath(Game.BinariesPath, file).Replace('\\', '/')))
+                        problems.Add($"{path} belongs to UE4SS, which the manager installed. Uninstall UE4SS first, or remove that file from the download.");
+                    else
+                        // Most often the same mod put in by hand. It goes to the backups, so nothing of the player's is lost.
+                        inTheWay.Add((target, path));
                 }
             }
 
@@ -977,7 +983,7 @@ public sealed class ModManager
                     if (!taken.Contains(file))
                     {
                         FileSystem.TryDeleteFile(file.DeployedPath!);
-                        RemoveEmptyFolders(file, file.DeployedPath!, ProjectFolder);
+                        RemoveEmptyFolders(file, file.DeployedPath!, LooseRoots);
                     }
                     file.DeployedPath = null;
                 }
@@ -1202,7 +1208,7 @@ public sealed class ModManager
             var items = folders.Where(Directory.Exists)
                 .Concat(files.Where(File.Exists))
                 .Concat(outside.Select(f => f.DeployedPath!));
-            var removal = new Removal(Park(items), ProjectFolder);
+            var removal = new Removal(Park(items), LooseRoots);
             foreach (var mod in affected)
                 removal.Disable(mod);
             Commit(removal);
@@ -1364,7 +1370,7 @@ public sealed class ModManager
     /// <summary>Files in the ~mods folder that no installed mod deployed, relative to that folder.</summary>
     public IReadOnlyList<string> UnmanagedFiles()
     {
-        if (!Directory.Exists(Game.ModsPath))
+        if (Game.Profile.Generic || !Directory.Exists(Game.ModsPath))
             return [];
         HashSet<string> owned;
         lock (gate)
@@ -1658,7 +1664,7 @@ public sealed class ModManager
         // Several mods leaving together may share one copy of a library.
         var deployed = files.Where(f => f.DeployedPath is not null && File.Exists(f.DeployedPath)).Select(f => f.DeployedPath!)
             .Distinct(StringComparer.OrdinalIgnoreCase);
-        var removal = new Removal(Park(deployed), ProjectFolder);
+        var removal = new Removal(Park(deployed), LooseRoots);
         // The game's own files, which the mods replaced, come back to these places.
         var replaced = group
             .SelectMany(m => m.Files.Where(f => f.IsGameFile && f.ReplacedSha256 is not null && f.DeployedPath is not null)
@@ -1709,7 +1715,7 @@ public sealed class ModManager
     /// Files and folders a change moved aside in the game. They are deleted once the mod list is
     /// saved. When it cannot be saved, they move back and the mods are enabled again.
     /// </summary>
-    private sealed class Removal(List<(string Original, string Parked)> parked, string? projectFolder)
+    private sealed class Removal(List<(string Original, string Parked)> parked, (string? Project, string? Generic) looseRoots)
     {
         private readonly List<(ModFileRecord File, string Path)> deployed = [];
         private readonly List<ModRecord> disabled = [];
@@ -1741,7 +1747,7 @@ public sealed class ModManager
                     FileSystem.TryDeleteFile(moved);
             }
             foreach (var (file, path) in deployed)
-                RemoveEmptyFolders(file, path, projectFolder);
+                RemoveEmptyFolders(file, path, looseRoots);
         }
 
         public void PutBack()
@@ -1880,7 +1886,7 @@ public sealed class ModManager
                         Log.Warn($"The game's own {file.FileName} could not be put back: {ex.Message}");
                     }
                 }
-                RemoveEmptyFolders(file, file.DeployedPath!, ProjectFolder);
+                RemoveEmptyFolders(file, file.DeployedPath!, LooseRoots);
             }
             file.DeployedPath = null;
         }
@@ -1892,11 +1898,14 @@ public sealed class ModManager
     /// and stay. Only the folders below a folder where mods keep loose files go: they are the mod's, and a script loader
     /// may stop at an empty folder there.
     /// </summary>
-    private static void RemoveEmptyFolders(ModFileRecord file, string deployedPath, string? projectFolder)
+    /// <param name="looseRoots">The Unreal project folder; in generic mode, the mods folder below the install folder instead.</param>
+    private static void RemoveEmptyFolders(ModFileRecord file, string deployedPath, (string? Project, string? Generic) looseRoots)
     {
         var name = !file.IsGameFile ? file.FileName
-            : file.Target == DeployTarget.InstallRoot ? PackageScanner.BelowModFolder(file.FileName, projectFolder)
-            : null;
+            : file.Target != DeployTarget.InstallRoot ? null
+            : looseRoots.Generic is { } mods
+                ? file.FileName.StartsWith(mods + "/", StringComparison.OrdinalIgnoreCase) ? file.FileName[(mods.Length + 1)..] : null
+            : PackageScanner.BelowModFolder(file.FileName, looseRoots.Project);
         if (name is not null)
             RemoveEmptyFolders(name, deployedPath);
     }
@@ -1945,6 +1954,10 @@ public sealed class ModManager
         ["Content/JavaScript/PBZModLoader", "PBZModLoader/compiler", "PBZModLoader/evidence", "PBZModLoader/TOOLCHAIN-LICENSE.txt"];
 
     private string? ProjectFolder => Game.ProjectFolder ?? Game.Profile.ProjectFolder;
+
+    /// <summary>Where mods keep loose files whose empty folders go with them: the project folder, or in generic mode the mods folder.</summary>
+    private (string? Project, string? Generic) LooseRoots =>
+        (ProjectFolder, Game.Profile.Generic && Game.Profile.ModsPath.Trim('/', '\\') is { Length: > 0 } mods ? mods.Replace('\\', '/') : null);
 
     private bool IsInProject(string path) =>
         (Game.ProjectFolder ?? Game.Profile.ProjectFolder) is { Length: > 0 } project && File.Exists(Path.Combine(Game.RootPath, project, path));

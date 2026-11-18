@@ -198,7 +198,8 @@
         <Setter Property="Background" Value="{StaticResource Brush.Line}" />
     </Style>
 
-    <!-- The open ink circle cut by a blade. Replaced by Theme\Art\logo.png when present. -->
+    <!-- The app's mark: an M whose middle is a down arrow, for mods and their downloads and updates.
+         Replaced by Theme\Art\logo.png when present. -->
     <Style x:Key="BrandMark" TargetType="ContentControl">
         <Setter Property="Focusable" Value="False" />
         <Setter Property="Template">
@@ -206,11 +207,13 @@
                 <ControlTemplate TargetType="ContentControl">
                     <Viewbox>
                         <Canvas Width="100" Height="100">
-                            <Path Stroke="{StaticResource Brush.Text}" StrokeThickness="8.5"
-                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                  Data="M 78.01,42.49 A 29,29 0 1 1 57.51,21.99" />
-                            <Polygon Fill="{StaticResource Brush.Accent}"
-                                     Points="13,87 58.19,48.59 89,11 51.41,41.81" />
+                            <Rectangle Canvas.Left="16" Canvas.Top="20" Width="17" Height="60" RadiusX="4" RadiusY="4"
+                                       Fill="{StaticResource Brush.Text}" />
+                            <Rectangle Canvas.Left="67" Canvas.Top="20" Width="17" Height="60" RadiusX="4" RadiusY="4"
+                                       Fill="{StaticResource Brush.Text}" />
+                            <Polygon Fill="{StaticResource Brush.Accent}" Stroke="{StaticResource Brush.Accent}"
+                                     StrokeThickness="1.5" StrokeLineJoin="Round"
+                                     Points="38,20 50,35 62,20 62,45 50,62 38,45" />
                         </Canvas>
                     </Viewbox>
                 </ControlTemplate>

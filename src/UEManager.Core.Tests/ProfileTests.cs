@@ -22,9 +22,9 @@ public class ProfileTests
     }
 
     [Fact]
-    public void A_default_build_contains_only_phantom_blade_zero()
+    public void Every_build_contains_every_profile()
     {
-        Assert.Equal("phantom-blade-zero", Assert.Single(GameProfile.BuiltIn()).Id);
+        Assert.Equal(["mortal-shell-2", "phantom-blade-zero"], GameProfile.BuiltIn().Select(p => p.Id).Order());
     }
 
     [Fact]

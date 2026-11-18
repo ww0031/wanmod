@@ -2,6 +2,17 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 3.0 (2026-11-19)
+- Giờ quản lý mod của mọi game, không chỉ Phantom Blade Zero: thư viện game mới tự tìm các game cài qua Steam và Epic, có ảnh bìa, game chơi gần nhất ở đầu. Tìm kiếm được, hoặc thêm game bằng thư mục của nó
+- Game làm bằng Unreal Engine dùng được mọi tính năng như Phantom Blade Zero; game khác dùng chế độ đơn giản: mod tải về được đặt nguyên vào thư mục game, và gỡ ra sạch sẽ
+- Mỗi game tự tìm trang của nó trên Nexus, nên duyệt, cài và cập nhật một chạm đều dùng được
+- Bấm chuột phải vào game để đổi tên, đổi ảnh bìa hoặc bỏ khỏi danh sách
+- Game chưa có ảnh bìa sẽ tự tìm một ảnh trong cửa hàng Steam
+- Hình nền giờ là ảnh của game bạn đang mở
+- Nội dung mod từ Nexus giờ cũng có thể dịch bằng Tencent Translate, dùng được ở Trung Quốc đại lục. Ở đó nó được chọn tự động, và bạn có thể chọn dịch vụ trong Cài đặt
+- Tên mới 万模 WanMod và biểu tượng ứng dụng mới
+- Cảm ơn những người đã ủng hộ trên afdian: 爱发电用户_fd470, 爱发电用户_f6ace, 爱发电用户_205bb
+
 ## 2.3 (2026-11-12)
 - Sửa lỗi: khi .NET trên máy bị hỏng, ứng dụng tắt ngay mà không báo gì. Giờ ứng dụng sẽ báo và cho tải bản sửa của Microsoft
 

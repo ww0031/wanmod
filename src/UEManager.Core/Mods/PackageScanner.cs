@@ -422,6 +422,31 @@ public static class PackageScanner
     }
 
     /// <summary>
+    /// A download for a game in generic mode: every file goes as the download places it into the game's mods folder.
+    /// Readmes and the like stay out.
+    /// </summary>
+    /// <param name="modsFolder">The mods folder below the install folder, as "Mods"; empty for the install folder itself.</param>
+    public static ScanResult ScanAll(string stagingDir, string name, string modsFolder)
+    {
+        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(stagingDir));
+        var files = Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
+            .Select(f => (File: f, Path: RelativePath(root, f)))
+            .ToList();
+        var ignored = files.Where(f => SettingsFiles.IsDocument(f.File)).Select(f => f.Path).Order(StringComparer.OrdinalIgnoreCase).ToList();
+        var placed = files.Where(f => !SettingsFiles.IsDocument(f.File)).ToList();
+        var prefix = modsFolder.Trim('/', '\\').Replace('\\', '/');
+        var nested = placed.Count(f => FileSystem.HasExtension(f.File, FileSystem.ArchiveExtensions));
+        IReadOnlyList<PackageGroup> packages = placed.Count == 0
+            ? []
+            :
+            [
+                PackageGroup.GameFiles(FileSystem.SafeName(name, "Mod"), "", placed.Select(f => f.File).ToList(),
+                    placed.Select(f => prefix.Length == 0 ? f.Path : $"{prefix}/{f.Path}").ToList()),
+            ];
+        return new ScanResult(packages, ignored, [], nested, false);
+    }
+
+    /// <summary>
     /// UE4SS mod folders: the folder above Scripts\main.lua (a Lua mod) or above
     /// dlls\*.dll (a C++ mod). A candidate inside another candidate is part of it.
     /// </summary>

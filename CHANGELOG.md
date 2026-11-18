@@ -4,6 +4,17 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 3.0 (2026-11-19)
+- Now manages the mods of every game, not only Phantom Blade Zero: the new game library finds the games of Steam and Epic by itself, with their covers and the last played first. Search them, or add a game by its folder
+- Games made with Unreal Engine get everything the app does for Phantom Blade Zero; other games get a simple mode that puts a download into the game folder as it is, and takes it out again cleanly
+- Each game finds its own page on Nexus by itself, so browsing, one-click install and updates work for it too
+- Right-click a game to rename it, give it your own cover, or take it off the list
+- A game without a cover finds one by itself in the Steam store
+- The background now shows a picture of the game you opened
+- Mod texts from Nexus can now also be translated by Tencent Translate, which works in mainland China. It is picked by itself there, and you can choose the service in Settings
+- A new name, 万模 WanMod, and a new app icon
+- Thank you for your support on afdian: 爱发电用户_fd470, 爱发电用户_f6ace, 爱发电用户_205bb
+
 ## 2.3 (2026-11-12)
 - Fixed: when the .NET runtime on the PC was damaged, the app closed at once without a word. It now says so and offers to download Microsoft's repair
 

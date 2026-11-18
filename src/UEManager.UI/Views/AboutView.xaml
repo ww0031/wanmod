@@ -28,72 +28,50 @@
             <TextBlock Style="{StaticResource Text.Small}" Text="{Binding AppVersionText}" />
         </StackPanel>
 
-        <!-- This modified version and where it comes from (NOTICE.md, terms 1 and 2). -->
-        <Border Margin="0,28,0,0" Style="{StaticResource Card}">
-            <StackPanel>
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" VerticalAlignment="Top" Content="{ui:Loc 'This version on GitHub'}" ui:Icon.Glyph="&#xE8A7;"
-                            Command="{Binding OpenForkPageCommand}" />
-                    <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'Modified version'}" />
-                </DockPanel>
-                <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}"
-                           Text="{ui:Loc 'This is a modified version of UE MM. It is not the original and not an official release, so please report its problems here and not to the original.'}" />
-                <Button Margin="0,4,0,0" HorizontalAlignment="Left" Style="{StaticResource Button.Link}" Content="{Binding ForkUrl}"
-                        Command="{Binding OpenForkPageCommand}" />
-                <TextBlock Margin="0,14,0,0" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}"
-                           Text="Based on UE MM by KintaroModding and contributors" />
-                <Button Margin="0,4,0,0" HorizontalAlignment="Left" Style="{StaticResource Button.Link}" Content="{Binding ProjectUrl}"
-                        Command="{Binding OpenProjectPageCommand}" />
-                <TextBlock Margin="0,14,0,0" Style="{StaticResource Text.Body}"
-                           Text="{ui:Loc 'New in this version: import a mod from its Nexus Mods link, update installed mods with one click, downloads in the background that install by themselves, and a button to install a missing Mods Menu or PBZModLoader.'}" />
-            </StackPanel>
-        </Border>
-
         <!-- A donation to the author of this modified version, not to the original's. -->
-        <Border Margin="0,20,0,0" Style="{StaticResource Card}">
+        <Border Margin="0,28,0,0" Style="{StaticResource Card}">
             <DockPanel>
                 <Button DockPanel.Dock="Right" Margin="24,0,0,0" VerticalAlignment="Center" Style="{StaticResource Button.Primary}"
                         Content="{ui:Loc 'Donate to the author'}" ui:Icon.Glyph="&#xEB52;" Command="{Binding OpenDonatePageCommand}" />
                 <StackPanel>
                     <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'Support the author'}" />
                     <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}"
-                               Text="{ui:Loc 'This modified version is free and open source, and every feature works the same without a donation. If you like it, you can support its author on afdian. It is fully optional.'}" />
+                               Text="{ui:Loc 'This app is free and open source, and every feature works the same without a donation. If you like it, you can support its author on afdian. It is fully optional.'}" />
                     <Button Margin="0,4,0,0" HorizontalAlignment="Left" Style="{StaticResource Button.Link}" Content="{Binding DonateUrl}"
                             Command="{Binding OpenDonatePageCommand}" />
+                    <TextBlock Margin="0,14,0,6" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" Text="{ui:Loc 'Thank you for your support'}" />
+                    <ItemsControl ItemsSource="{Binding Supporters}" Focusable="False">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,0,8,6" Style="{StaticResource Badge}" Padding="10,4">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource Text.Icon}" FontSize="11" Foreground="{StaticResource Brush.Accent}" Text="&#xEB52;" />
+                                        <TextBlock Margin="6,0,0,0" FontSize="12" Text="{Binding}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </DockPanel>
         </Border>
 
         <Border Margin="0,20,0,0" Style="{StaticResource Card}">
             <StackPanel>
-                <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'What it does'}" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" VerticalAlignment="Top" Content="{ui:Loc 'Project page on GitHub'}" ui:Icon.Glyph="&#xE8A7;"
+                            Command="{Binding OpenForkPageCommand}" />
+                    <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'What it does'}" />
+                </DockPanel>
                 <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}"
-                           Text="{ui:Loc 'A mod manager for Unreal Engine games. It installs packaged mods (.pak, .utoc and .ucas), Blueprint mods, and UE4SS Lua and DLL mods, keeps its own copy of every mod, and records a checksum for every file it places. Files it did not place are never overwritten or removed.'}" />
+                           Text="{ui:Loc 'A mod manager for all your games. Unreal Engine games get packaged mods (.pak, .utoc and .ucas), Blueprint mods, and UE4SS Lua and DLL mods; other games are managed in generic mode, where mods go into a folder you choose. It keeps its own copy of every mod, and records a checksum for every file it places. Files it did not place are never overwritten or removed.'}" />
                 <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}"
                            Text="{ui:Loc 'Downloads are unpacked into a private staging folder first. Nothing inside a download is ever run.'}" />
-            </StackPanel>
-        </Border>
-
-        <Border Margin="0,20,0,0" Style="{StaticResource Card}">
-            <StackPanel>
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" VerticalAlignment="Top" Content="{ui:Loc 'Contribute on GitHub'}" ui:Icon.Glyph="&#xE8A7;"
-                            Command="{Binding OpenProjectPageCommand}" />
-                    <TextBlock Style="{StaticResource Text.Title}" Text="{ui:Loc 'Contributors'}" />
-                </DockPanel>
-                <TextBlock Margin="0,8,0,12" Style="{StaticResource Text.Body}"
-                           Text="{ui:Loc 'Made by everyone below. Help improve the original: every contributor is named here, in every release.'}" />
-                <ItemsControl ItemsSource="{Binding Contributors}" Focusable="False">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <!-- A long line wraps; the mark stays by its first line. -->
-                            <DockPanel Margin="0,0,0,6">
-                                <Rectangle Width="6" Height="6" Margin="2,7,12,0" VerticalAlignment="Top" Fill="{StaticResource Brush.Accent}" />
-                                <TextBlock Foreground="{StaticResource Brush.Text}" TextWrapping="Wrap" Text="{Binding}" />
-                            </DockPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
             </StackPanel>
         </Border>
 
@@ -103,6 +81,11 @@
                 <TextBlock Margin="0,8,0,12" Style="{StaticResource Text.Body}"
                            Text="{ui:Loc 'This app is free software: you may share and change it under the GNU General Public License, version 3, with the additional terms below. A work based on it keeps the credit to the original and its contributors, and carries a name of its own. It comes with ABSOLUTELY NO WARRANTY.'}" />
                 <ItemsControl ItemsSource="{Binding OwnLicenses}" ItemTemplate="{StaticResource LicenseText}" Focusable="False" />
+                <!-- Required by NOTICE.md, terms 1 and 2: the credit line with its address, and that this is a modified version. -->
+                <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Small}" Text="{ui:Loc 'This app is a modified version.'}" />
+                <TextBlock Margin="0,2,0,0" Style="{StaticResource Text.Small}" Text="Based on UE MM by KintaroModding and contributors" />
+                <Button Margin="0,2,0,0" HorizontalAlignment="Left" Style="{StaticResource Button.Link}" Content="{Binding ProjectUrl}"
+                        Command="{Binding OpenProjectPageCommand}" />
             </StackPanel>
         </Border>
 

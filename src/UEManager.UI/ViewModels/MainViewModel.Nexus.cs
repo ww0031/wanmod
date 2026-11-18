@@ -78,7 +78,7 @@ public sealed partial class MainViewModel
             ShowToast(L.T("Paste the link of a mod on Nexus Mods, such as https://www.nexusmods.com/phantombladezero/mods/260."), isError: true);
             return;
         }
-        if (!IsThisGame(mod))
+        if (!await EnsureNexusGameAsync(mod))
             return;
         await ImportNexusModAsync(mod);
     }
@@ -135,7 +135,7 @@ public sealed partial class MainViewModel
             ShowToast(L.T("This Mod Manager Download link is incomplete. Click Mod Manager Download on the site again."), isError: true);
             return;
         }
-        if (!EnsureGame() || !IsThisGame(link.Mod))
+        if (!await EnsureNexusGameAsync(link.Mod) || !EnsureGame())
             return;
         NexusModInfo? info = null;
         if (!await RunAsync(L.T("Reading the mod on Nexus Mods…"), async () => info = await NexusMods.GetModAsync(Http, link.Mod)))
@@ -158,14 +158,6 @@ public sealed partial class MainViewModel
         return fromMod.FirstOrDefault(m => ModNaming.SiteFile(m.SourceFileName) is { } site && NexusMods.SameName(site.Name, file.Name))
             ?? (fromMod is [var only] && ModNaming.SiteFile(only.SourceFileName) is { } s
                 && !info.Files.Any(f => f.IsCurrent && NexusMods.SameName(f.Name, s.Name)) ? only : null);
-    }
-
-    private bool IsThisGame(NexusModRef mod)
-    {
-        if (NexusGame is null || string.Equals(mod.Game, NexusGame, StringComparison.OrdinalIgnoreCase))
-            return true;
-        ShowToast(L.F($"This link is for another game on Nexus Mods ({mod.Game}), not {GameDisplayName}."), isError: true);
-        return false;
     }
 
     /// <summary>

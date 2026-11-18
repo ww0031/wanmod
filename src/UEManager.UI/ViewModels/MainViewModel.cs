@@ -47,8 +47,17 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     private string? installedUe4ssVersion;
     private Ue4ssRelease? latestUe4ss;
 
-    /// <summary>Where the UE4SS manifest is read, in order: the game profile's copies, or a test copy given on the command line.</summary>
-    private readonly IReadOnlyList<string> ue4ssManifestUrls;
+    /// <summary>A test copy of the UE4SS manifest given on the command line; null reads the game profile's copies.</summary>
+    private readonly string? ue4ssManifestUrl;
+
+    /// <summary>
+    /// Where the UE4SS manifest is read, in order: a test copy given on the command line, else the game profile's
+    /// copies; an Unreal game without its own reads Phantom Blade Zero's, which lists the games UE4SS knows.
+    /// </summary>
+    private IReadOnlyList<string> Ue4ssManifestUrls =>
+        ue4ssManifestUrl is not null ? [ue4ssManifestUrl]
+        : Profile.Ue4ssManifestUrls.Count > 0 || Profile.Generic ? Profile.Ue4ssManifestUrls
+        : GameLibrary.BuiltIn.FirstOrDefault(p => p.Id == ArtGameId)?.Ue4ssManifestUrls ?? [];
 
     /// <summary>
     /// The installed UE4SS files that differ from every official build; empty for an official build, null while
@@ -67,12 +76,13 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     {
         Profile = profile;
         this.paths = paths;
-        ue4ssManifestUrls = ue4ssManifestUrl is null ? profile.Ue4ssManifestUrls : [ue4ssManifestUrl];
+        this.ue4ssManifestUrl = ue4ssManifestUrl;
         Art = art;
         settings = AppSettings.Load(paths);
         CreateCatalog(catalogUrl);
+        // Releases keep Phantom Blade Zero's file name, which every earlier version looks for.
         Update = new AppUpdateViewModel(this, Http, paths, updateUrl is null ? AppInfo.LatestReleaseUrls : [updateUrl],
-            $"{AppInfo.ReleaseFilePrefix}_{profile.Id}_");
+            $"{AppInfo.ReleaseFilePrefix}_{ArtGameId}_");
         Ue4ssLogPanel = new Ue4ssLogViewModel(this);
         ModsView = CollectionViewSource.GetDefaultView(Mods);
         ModsView.Filter = item => item is ModItemViewModel mod && mod.Matches(SearchText) && ModTags.Has(mod.Record, SelectedTag)
@@ -210,11 +220,14 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <summary>The installed mods or UE4SS changed.</summary>
     partial void OnModsChanged();
 
-    public GameProfile Profile { get; }
+    public GameProfile Profile { get; private set; }
 
-    public string GameDisplayName => L.T(Profile.DisplayName);
+    public string GameDisplayName => CurrentGame is { } game ? NameOf(game)
+        : hasLibrary ? L.T("No game chosen")
+        : L.T(Profile.DisplayName);
 
-    public string GameTagline => L.T(Profile.Tagline ?? "");
+    /// <summary>The profile's line on Home; a game without one shows Phantom Blade Zero's, which says what the manager does.</summary>
+    public string GameTagline => L.T(Profile.Tagline ?? GameLibrary.BuiltIn.FirstOrDefault(p => p.Id == ArtGameId)?.Tagline ?? "");
 
     public IReadOnlyList<LanguageOption> Languages => L.Current.Languages;
 
@@ -247,9 +260,6 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <summary>The app's own license (GPL-3.0) and its additional terms.</summary>
     public IReadOnlyList<LicenseNotice> OwnLicenses { get; } = LicenseNotices.LoadOwn();
 
-    /// <summary>Everyone in CONTRIBUTORS.md, named on the About page.</summary>
-    public IReadOnlyList<string> Contributors { get; } = LicenseNotices.Contributors();
-
     /// <summary>The version check at start, and the update window.</summary>
     public AppUpdateViewModel Update { get; }
 
@@ -260,7 +270,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     private GameInstall? game;
 
     [ObservableProperty]
-    private string selectedPage = "Home";
+    private string selectedPage = "Games";
 
     [ObservableProperty]
     private bool isBusy;
@@ -356,6 +366,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     public string ForkUrl => AppInfo.ForkUrl;
 
     public string DonateUrl => AppInfo.DonateUrl;
+
+    public IReadOnlyList<string> Supporters => AppInfo.Supporters;
 
     /// <summary>The taskbar title; the game tells builds for different games apart.</summary>
     public string WindowTitle => $"{AppInfo.Name} · {GameDisplayName}";
@@ -656,14 +668,9 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         if (settings.Language is null && L.Current.Offer() is { } offered)
             await OfferLanguageAsync(offered);
         ModManager.ClearStaging(paths);
-        GameInstall? found = null;
-        await RunAsync(L.T("Looking for the game…"), async () => found = await Task.Run(FindGame));
-        await SetGameAsync(found);
+        await LoadLibraryAsync();
         gameWatch.Start();
-        _ = CheckUe4ssManifestAsync();
         _ = Update.CheckAsync();
-        _ = TranslateCardsAsync();
-        _ = CheckNexusUpdatesAsync(quiet: true);
         if (downloads.Count > 0)
             await InstallAsync(downloads);
         _ = Update.OpenChangelogAtStartAsync();
@@ -1160,12 +1167,19 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     /// <summary>Reads the online manifest once per start. Offline or failing, it stays quiet.</summary>
     private async Task CheckUe4ssManifestAsync()
     {
-        if (ue4ssManifestUrls.Count == 0)
+        if (Profile.Generic)
+            return;
+        var urls = Ue4ssManifestUrls;
+        if (urls.Count == 0)
         {
             Remote = RemoteSource.Offline;
             return;
         }
-        var answer = await Ue4ssManifest.FetchAsync(Http, ue4ssManifestUrls, Profile.Id);
+        var profile = Profile;
+        var answer = await Ue4ssManifest.FetchAsync(Http, urls, profile.Id);
+        // Another game was opened meanwhile: its own check runs.
+        if (profile != Profile)
+            return;
         Remote = answer is null ? RemoteSource.Offline : RemoteSources.Of(answer.Url);
         latestUe4ss = answer?.Release;
         if (answer is not null)
@@ -1448,10 +1462,17 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     [RelayCommand]
     private async Task LocateGame()
     {
+        if (CurrentGame is not { } entry)
+        {
+            await AddGame();
+            return;
+        }
         var dialog = new OpenFolderDialog { Title = L.F($"Choose the {GameDisplayName} install folder") };
         if (dialog.ShowDialog() != true)
             return;
-        var install = GameLocator.FromFolder(Profile, dialog.FolderName);
+        var install = GameLibrary.BuiltIn.Contains(Profile)
+            ? GameLocator.FromFolder(Profile, dialog.FolderName)
+            : GameScanner.FromFolder(dialog.FolderName) is { } found ? Relocated(entry, found) : null;
         if (install is null)
         {
             var folders = Profile.ProjectFolder is { Length: > 0 } project ? L.F($"the Engine and {project} folders") : L.T("the Engine folder");
@@ -1461,15 +1482,37 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         }
         if (!await SetGameAsync(install, L.F($"Using {install.RootPath}.")))
             return;
-        settings.GamePaths[Profile.Id] = install.RootPath;
-        SaveSettings();
+        entry.RootPath = install.RootPath;
+        library.TrySave(paths);
+    }
+
+    /// <summary>The game in another folder the player picked: what that folder holds replaces what the entry knew.</summary>
+    private GameInstall? Relocated(LibraryGame entry, FoundGame found)
+    {
+        entry.RootPath = found.RootPath;
+        entry.Unreal = found.Unreal;
+        entry.ProjectFolder = found.ProjectFolder;
+        Profile = entry.ToProfile();
+        return entry.Locate();
     }
 
     [RelayCommand]
     private async Task DetectGame()
     {
+        if (CurrentGame is not { } entry)
+        {
+            await ScanGamesAsync(quiet: false);
+            return;
+        }
         GameInstall? found = null;
-        await RunAsync(L.T("Searching Steam and Epic…"), async () => found = await Task.Run(() => GameLocator.Discover(Profile)));
+        if (GameLibrary.BuiltIn.Contains(Profile))
+            await RunAsync(L.T("Searching Steam and Epic…"), async () => found = await Task.Run(() => GameLocator.Discover(Profile)));
+        else
+        {
+            FoundGame? scanned = null;
+            await RunAsync(L.T("Searching Steam and Epic…"), async () => scanned = await Task.Run(() => FindAgain(entry)));
+            found = scanned is null ? null : Relocated(entry, scanned);
+        }
         if (found is null)
         {
             ShowToast(L.F($"{GameDisplayName} was not found automatically. Choose its folder by hand."), isError: true);
@@ -1478,9 +1521,15 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         var store = found.Store == GameStore.Epic ? "Epic Games" : "Steam";
         if (!await SetGameAsync(found, L.F($"Found {GameDisplayName} through {store}.")))
             return;
-        settings.GamePaths.Remove(Profile.Id);
-        SaveSettings();
+        entry.RootPath = found.RootPath;
+        library.TrySave(paths);
     }
+
+    /// <summary>Where Steam or Epic has a game of the library now, by the store's id or name.</summary>
+    private static FoundGame? FindAgain(LibraryGame entry) =>
+        GameScanner.Scan().FirstOrDefault(g =>
+            (entry.SteamAppId is not null && g.SteamAppId == entry.SteamAppId)
+            || (entry.Store == GameStore.Epic && g.Store == GameStore.Epic && string.Equals(g.Name, entry.Name, StringComparison.OrdinalIgnoreCase)));
 
     /// <summary>
     /// Backs up the saves first, when the player wants that and the save folder is known. Without
@@ -1522,6 +1571,11 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         try
         {
             Game!.Launch();
+            if (CurrentGame is { } entry)
+            {
+                entry.LastLaunched = DateTimeOffset.Now;
+                library.TrySave(paths);
+            }
             ShowToast(L.Join(L.F($"Starting {GameDisplayName}…"), note));
         }
         catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
@@ -1780,19 +1834,6 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     private string SortGlyph(ModSortField field) =>
         field != SortField ? "" : SortDescending ? "" : "";
 
-    /// <summary>The saved folder first, then Steam and Epic.</summary>
-    private GameInstall? FindGame()
-    {
-        if (settings.GamePaths.TryGetValue(Profile.Id, out var saved))
-        {
-            var install = GameLocator.FromFolder(Profile, saved);
-            if (install is not null)
-                return install;
-            Log.Warn($"The saved game folder '{saved}' no longer matches the profile.");
-        }
-        return GameLocator.Discover(Profile);
-    }
-
     /// <summary>
     /// Connects to an install. When enabled mods are still in another install of the game, the
     /// player first moves them here, or keeps the install they are in.
@@ -1812,8 +1853,11 @@ public sealed partial class MainViewModel : LocalizedObservableObject
                 if (manager is null && GameLocator.FromFolder(Profile, other) is { } holding)
                 {
                     Connect(new ModManager(holding, paths));
-                    settings.GamePaths[Profile.Id] = holding.RootPath;
-                    SaveSettings();
+                    if (CurrentGame is { } entry)
+                    {
+                        entry.RootPath = holding.RootPath;
+                        library.TrySave(paths);
+                    }
                     ShowToast(L.F($"Using {holding.RootPath}, where your mods are."));
                 }
                 return false;
@@ -1983,6 +2027,16 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         var accepted = await Confirm.Result;
         Confirm = null;
         return accepted;
+    }
+
+    /// <summary>Asks for a text in the themed overlay; null when the player cancels.</summary>
+    private async Task<string?> AskTextAsync(string title, string message, string confirmText, string text)
+    {
+        Confirm = new ConfirmViewModel(title, message, confirmText, L.T("Cancel"), input: text);
+        var accepted = await Confirm.Result;
+        var answer = Confirm.InputText;
+        Confirm = null;
+        return accepted ? answer : null;
     }
 
     /// <summary>A dialog, the busy screen or the drop target covers the window.</summary>

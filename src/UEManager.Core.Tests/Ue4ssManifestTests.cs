@@ -187,7 +187,7 @@ public class Ue4ssManifestTests : IDisposable
     [Fact]
     public void The_built_in_profile_reads_the_manifest_from_cloudflare_first_and_github_last()
     {
-        var urls = Assert.Single(UEManager.Core.Games.GameProfile.BuiltIn()).Ue4ssManifestUrls;
+        var urls = Assert.Single(UEManager.Core.Games.GameProfile.BuiltIn(), p => p.Id == "phantom-blade-zero").Ue4ssManifestUrls;
 
         Assert.Equal(3, urls.Count);
         Assert.StartsWith("https://metadata.openmods.nexus/", urls[0]);

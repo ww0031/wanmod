@@ -87,7 +87,7 @@ public class LanguageSwitchTests
             surface.Measure(new Size(1360, 800));
             surface.Arrange(new Rect(0, 0, 1360, 800));
             FlushBindings();
-            var selector = Descendants(surface).OfType<ComboBox>().Single();
+            var selector = Descendants(surface).OfType<ComboBox>().Single(c => c.ItemsSource is IEnumerable<LanguageOption>);
             Assert.Equal("en", selector.SelectedValue);
             Assert.Contains(Descendants(surface).OfType<TextBlock>(), t => t.Text == "Settings");
 

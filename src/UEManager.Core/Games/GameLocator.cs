@@ -101,6 +101,8 @@ public static class GameLocator
     public static GameInstall? Resolve(GameProfile profile, string root, GameStore store,
         string? buildId = null, string? launchUri = null)
     {
+        if (profile.Generic)
+            return Directory.Exists(root) ? Generic(profile, root, store, buildId, launchUri) : null;
         if (!Directory.Exists(root))
             return null;
         foreach (var project in ProjectCandidates(profile, root))
@@ -113,6 +115,14 @@ public static class GameLocator
             return new GameInstall(profile, Path.GetFullPath(root), project, paks, mods, binaries, store, buildId, launchUri);
         }
         return null;
+    }
+
+    /// <summary>A game in generic mode: its mods folder, which may not exist yet, below the install folder; no Unreal folders.</summary>
+    private static GameInstall Generic(GameProfile profile, string root, GameStore store, string? buildId, string? launchUri)
+    {
+        var full = Path.GetFullPath(root);
+        var mods = GameProfile.ResolvePath(full, profile.ModsPath, null);
+        return new GameInstall(profile, full, null, mods, mods, full, store, buildId, launchUri);
     }
 
     /// <summary>

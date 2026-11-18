@@ -47,7 +47,7 @@
         <!-- Without cover art: a faint cinnabar bloom, like ink spreading on paper. -->
         <Ellipse Grid.Row="1" Width="1100" Height="820" HorizontalAlignment="Right" VerticalAlignment="Top"
                  Margin="0,-420,-360,0" IsHitTestVisible="False"
-                 Visibility="{Binding Art.HasBackground, Converter={StaticResource Hidden}}">
+                 Visibility="{Binding HasBackground, Converter={StaticResource Hidden}}">
             <Ellipse.Fill>
                 <RadialGradientBrush>
                     <GradientStop Color="#30C8102E" Offset="0" />
@@ -71,7 +71,7 @@
                         <Grid Width="60" Height="60" HorizontalAlignment="Left">
                             <Image Source="{Binding Art.Logo}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
                                    Visibility="{Binding Art.HasLogo, Converter={StaticResource Visible}}" />
-                            <ContentControl Style="{StaticResource BrandMark}" Margin="0,8,16,8"
+                            <ContentControl Style="{StaticResource BrandMark}" Margin="-8,2,8,2"
                                             Visibility="{Binding Art.HasLogo, Converter={StaticResource Hidden}}" />
                         </Grid>
                         <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Title}" FontSize="16" LineHeight="22"
@@ -162,6 +162,8 @@
                     <!-- Scrolls when the window is too low for every entry, so none hides behind the buttons below. -->
                     <ScrollViewer Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel>
+                            <RadioButton Style="{StaticResource NavItem}" Content="{ui:Loc 'Game library'}" ui:Icon.Glyph="&#xE7FC;"
+                                         IsChecked="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Games}" />
                             <RadioButton Style="{StaticResource NavItem}" Content="{ui:Loc 'Home'}" ui:Icon.Glyph="&#xE80F;"
                                          IsChecked="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Home}" />
                             <RadioButton Style="{StaticResource NavItem}" Content="{ui:Loc 'Mods'}" ui:Icon.Glyph="&#xE8F1;"
@@ -169,7 +171,7 @@
                             <RadioButton Style="{StaticResource NavItem}" Content="{ui:Loc 'Browse mods'}" ui:Icon.Glyph="&#xE721;"
                                          Visibility="{Binding HasBrowse, Converter={StaticResource Visible}}"
                                          IsChecked="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Browse}" />
-                            <Grid>
+                            <Grid Visibility="{Binding IsUnrealGame, Converter={StaticResource Visible}}">
                                 <RadioButton Style="{StaticResource NavItem}" Content="{ui:Loc 'Loaders'}" ui:Icon.Glyph="&#xE943;"
                                              IsChecked="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Ue4ss}" />
                                 <!-- A new version of a recommended loader waits on this page. -->
@@ -206,11 +208,11 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <!-- Cover art (Theme\Art\background.jpg): anchored top right, fading into ink toward the
+                <!-- The opened game's wide Steam picture: anchored top right, fading into ink toward the
                      lower left. The fades are ink layers painted over the image. -->
                 <Grid Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" IsHitTestVisible="False">
-                    <Image Source="{Binding Art.Background}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
-                    <Rectangle Visibility="{Binding Art.HasBackground, Converter={StaticResource Visible}}">
+                    <Image Source="{Binding Background}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
+                    <Rectangle Visibility="{Binding HasBackground, Converter={StaticResource Visible}}">
                         <Rectangle.Fill>
                             <RadialGradientBrush Center="1,0" GradientOrigin="1,0" RadiusX="0.95" RadiusY="1.5">
                                 <GradientStop Color="#000B0A0A" Offset="0" />
@@ -220,7 +222,7 @@
                         </Rectangle.Fill>
                     </Rectangle>
                     <!-- Softens the bottom edge into the window background. -->
-                    <Rectangle Visibility="{Binding Art.HasBackground, Converter={StaticResource Visible}}">
+                    <Rectangle Visibility="{Binding HasBackground, Converter={StaticResource Visible}}">
                         <Rectangle.Fill>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                 <GradientStop Color="#000B0A0A" Offset="0.55" />
@@ -231,6 +233,7 @@
                 </Grid>
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <Grid MaxWidth="1120" Margin="48,0,48,28">
+                        <views:GamesView Visibility="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Games}" />
                         <views:HomeView Visibility="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Home}" />
                         <views:ModsView x:Name="ModsPage" Visibility="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Mods}" />
                         <Grid Visibility="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Browse}">
@@ -590,6 +593,8 @@
                 <StackPanel>
                     <TextBlock Style="{StaticResource Text.Title}" Text="{Binding Title}" />
                     <TextBlock Margin="0,10,0,0" Style="{StaticResource Text.Body}" Text="{Binding Message}" />
+                    <TextBox Margin="0,16,0,0" Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
+                             Visibility="{Binding HasInput, Converter={StaticResource Visible}}" />
                     <StackPanel Margin="0,26,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="{Binding CancelText}" Command="{Binding CancelCommand}" />
                         <Button Margin="8,0,0,0" Style="{StaticResource Button.Primary}"

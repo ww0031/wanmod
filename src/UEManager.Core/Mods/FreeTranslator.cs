@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -5,21 +6,47 @@ using UEManager.Core.Storage;
 
 namespace UEManager.Core.Mods;
 
+/// <summary>The free service that translates mod texts.</summary>
+public enum TranslationService
+{
+    /// <summary>Tencent first in mainland China, where Google cannot be reached, else Google first; the other when one fails.</summary>
+    Auto,
+    Tencent,
+    Google,
+}
+
 /// <summary>
-/// Free machine translation of mod texts, with no account, through the public endpoint of Google's translate browser
-/// extension. Every translation is kept in a file in the data folder, so a text goes out once. Into English only texts
-/// with other letters are sent, into another language only texts with Latin letters: a Chinese text stays as it is.
-/// An empty answer, which the service sometimes gives, is not kept: the text shows as it is and goes out again next time.
+/// Free machine translation of mod texts, with no account, through the public endpoints of Google's translate browser
+/// extension and of Tencent's TranSmart, which also works in mainland China. Every translation is kept in a file in the
+/// data folder, so a text goes out once. Into English only texts with other letters are sent, into another language only
+/// texts with Latin letters: a Chinese text stays as it is. An empty answer, which the service sometimes gives, is not
+/// kept: the text shows as it is and goes out again next time.
 /// </summary>
 public sealed partial class FreeTranslator(HttpClient http, string cacheFile)
 {
     private const string Endpoint = "https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=auto&tl=";
 
+    private const string TencentEndpoint = "https://transmart.qq.com/api/imt";
+
+    private const string BrowserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
+
+    /// <summary>A service that does not answer by then is given up, so the other one can be asked.</summary>
+    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(15);
+
     /// <summary>About as much text as one request carries; a longer text goes on its own.</summary>
     private const int RequestChars = 4000;
 
     private readonly object sync = new();
+    private readonly string tencentKey = $"browser-chrome-130.0.0-Windows-{Guid.NewGuid()}";
     private Dictionary<string, string>? cache;
+
+    public TranslationService Service { get; set; } = TranslationService.Auto;
+
+    /// <summary>The service that answered last; null before any answered.</summary>
+    public TranslationService? Used { get; private set; }
+
+    /// <summary>The service a translation goes to first.</summary>
+    public TranslationService First => Order(Service, Used, InMainlandChina())[0];
 
     /// <summary>The texts in <paramref name="language"/>, such as "zh-CN", in their order.</summary>
     /// <exception cref="ModException">The service could not be reached; what it translated so far is kept for next time.</exception>
@@ -115,17 +142,123 @@ public sealed partial class FreeTranslator(HttpClient http, string cacheFile)
 
     private async Task<IReadOnlyList<string>> RequestAsync(IReadOnlyList<string> batch, string language, CancellationToken cancellation)
     {
+        ModException? failure = null;
+        foreach (var service in Order(Service, Used, InMainlandChina()))
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+            timeout.CancelAfter(RequestTimeout);
+            try
+            {
+                var answers = service == TranslationService.Tencent
+                    ? await RequestTencentAsync(batch, language, timeout.Token)
+                    : await RequestGoogleAsync(batch, language, timeout.Token);
+                Used = service;
+                return answers;
+            }
+            catch (ModException ex)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                Log.Warn($"{service}: {ex.Message}");
+                failure = ex;
+            }
+        }
+        throw failure!;
+    }
+
+    /// <summary>
+    /// The services to ask, in their order: the chosen one alone, else for <see cref="TranslationService.Auto"/> the one
+    /// that answered last, else the one that works where the player is, with the other after it.
+    /// </summary>
+    internal static IReadOnlyList<TranslationService> Order(TranslationService chosen, TranslationService? used, bool mainlandChina)
+    {
+        if (chosen != TranslationService.Auto)
+            return [chosen];
+        var first = used ?? (mainlandChina ? TranslationService.Tencent : TranslationService.Google);
+        return [first, first == TranslationService.Tencent ? TranslationService.Google : TranslationService.Tencent];
+    }
+
+    private static bool InMainlandChina()
+    {
+        try
+        {
+            return RegionInfo.CurrentRegion.TwoLetterISORegionName == "CN";
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Tencent's name of a language: "zh" for simplified Chinese, "zh-TW" for traditional, else its first part, as "vi".</summary>
+    internal static string TencentLanguage(string language) =>
+        language.Equals("zh-CN", StringComparison.OrdinalIgnoreCase) || language.Equals("zh", StringComparison.OrdinalIgnoreCase) ? "zh"
+        : language.StartsWith("zh", StringComparison.OrdinalIgnoreCase) ? "zh-TW"
+        : language.Split('-')[0].ToLowerInvariant();
+
+    /// <summary>
+    /// The translations in Tencent's answer, {"header":{"ret_code":"succ"},"auto_translation":["…", …]}. Null when it
+    /// reports a failure, which comes with status 200, or has another number of texts.
+    /// </summary>
+    internal static IReadOnlyList<string>? ReadTencentAnswer(string json, int count)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("header", out var header) || header.ValueKind != JsonValueKind.Object
+                || !header.TryGetProperty("ret_code", out var code) || code.ValueKind != JsonValueKind.String || code.GetString() != "succ"
+                || !root.TryGetProperty("auto_translation", out var texts) || texts.ValueKind != JsonValueKind.Array
+                || texts.GetArrayLength() != count || texts.EnumerateArray().Any(t => t.ValueKind != JsonValueKind.String))
+                return null;
+            return texts.EnumerateArray().Select(t => t.GetString()!).ToList();
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<IReadOnlyList<string>> RequestTencentAsync(IReadOnlyList<string> batch, string language, CancellationToken cancellation)
+    {
+        var body = JsonSerializer.Serialize(new
+        {
+            header = new { fn = "auto_translation", client_key = tencentKey },
+            type = "plain",
+            model_category = "normal",
+            source = new { lang = "auto", text_list = batch },
+            target = new { lang = TencentLanguage(language) },
+        });
+        using var request = new HttpRequestMessage(HttpMethod.Post, TencentEndpoint)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "application/json"),
+        };
+        request.Headers.TryAddWithoutValidation("User-Agent", BrowserAgent);
+        var json = await SendAsync(request, cancellation);
+        return ReadTencentAnswer(json, batch.Count) ?? throw new ModException($"The translation service gave an answer the app cannot read.");
+    }
+
+    private async Task<IReadOnlyList<string>> RequestGoogleAsync(IReadOnlyList<string> batch, string language, CancellationToken cancellation)
+    {
         var form = string.Join("&", batch.Select(t => "q=" + Uri.EscapeDataString(t)));
         using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint + Uri.EscapeDataString(language))
         {
             Content = new StringContent(form, Encoding.UTF8, "application/x-www-form-urlencoded"),
         };
+        return ReadAnswer(await SendAsync(request, cancellation), batch.Count)
+            ?? throw new ModException($"The translation service gave an answer the app cannot read.");
+    }
+
+    /// <summary>The answer's text.</summary>
+    /// <exception cref="ModException">The service could not be reached, did not answer in time, or answered with an error.</exception>
+    private async Task<string> SendAsync(HttpRequestMessage request, CancellationToken cancellation)
+    {
         HttpResponseMessage response;
         try
         {
             response = await http.SendAsync(request, cancellation);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !cancellation.IsCancellationRequested)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             throw new ModException($"The translation service could not be reached: {ex.Message}");
         }
@@ -133,8 +266,14 @@ public sealed partial class FreeTranslator(HttpClient http, string cacheFile)
         {
             if (!response.IsSuccessStatusCode)
                 throw new ModException($"The translation service answered {(int)response.StatusCode} {response.ReasonPhrase}.");
-            return ReadAnswer(await response.Content.ReadAsStringAsync(cancellation), batch.Count)
-                ?? throw new ModException($"The translation service gave an answer the app cannot read.");
+            try
+            {
+                return await response.Content.ReadAsStringAsync(cancellation);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+            {
+                throw new ModException($"The translation service could not be reached: {ex.Message}");
+            }
         }
     }
 

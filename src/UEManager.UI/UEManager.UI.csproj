@@ -6,6 +6,7 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>UEManager.UI</RootNamespace>
     <AssemblyName>UEModManager</AssemblyName>
+    <AssemblyTitle>万模 WanMod</AssemblyTitle>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Program.Main checks the .NET Desktop Runtime before WPF starts. -->

@@ -1,6 +1,4 @@
-// Game profile for Mortal Shell II. Used for test builds only, to try the manager
-// against a released Unreal Engine 5 game:
-//   dotnet publish src/UEManager.UI/UEManager.UI.csproj -p:GameProfile=mortal-shell-2
+// Game profile for Mortal Shell II, built into the exe with every other profile.
 //
 // Layout as documented by the game's mod pages: <install>\MortalShell2\Content\Paks\~mods.
 // "executable" is left out: without Steam, the manager starts the exe it finds in the
@@ -9,7 +7,6 @@
   "id": "mortal-shell-2",
   "displayName": "Mortal Shell II",
   "developer": "Cold Symmetry",
-  "tagline": "Test build: the manager pointed at Mortal Shell II to check detection, install, enable, disable and uninstall.",
 
   "steamAppId": "2584270",
 
@@ -26,5 +23,7 @@
 
   "projectFolder": "MortalShell2",
   "paksPath": "{Project}/Content/Paks",
-  "modsPath": "{Project}/Content/Paks/~mods"
+  "modsPath": "{Project}/Content/Paks/~mods",
+
+  "modPageUrl": "https://www.nexusmods.com/mortalshell2/mods/{id}"
 }
