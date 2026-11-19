@@ -2141,6 +2141,20 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         }
     }
 
+    /// <summary>See <see cref="AppSettings.ShowAdultContent"/>.</summary>
+    internal bool ShowAdultContent => settings.ShowAdultContent;
+
+    /// <summary>See <see cref="AppSettings.BrowseSort"/>.</summary>
+    internal NexusSort BrowseSort
+    {
+        get => settings.BrowseSort;
+        set
+        {
+            settings.BrowseSort = value;
+            SaveSettings();
+        }
+    }
+
     /// <param name="actionText">A button in the toast, which runs <paramref name="action"/>; the toast then stays longer.</param>
     internal void ShowToast(string text, bool isError = false, string? actionText = null, Action? action = null)
     {

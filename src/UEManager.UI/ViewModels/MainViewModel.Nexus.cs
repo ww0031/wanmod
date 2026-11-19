@@ -89,6 +89,18 @@ public sealed partial class MainViewModel
         await ImportNexusModAsync(mod);
     }
 
+    /// <summary>A mod's link dragged into the window from a browser, or pasted there with Ctrl+V: imported as from the Mods page.</summary>
+    internal async Task ImportNexusLinkAsync(string link)
+    {
+        if (IsBusy || InstallDialog is not null)
+        {
+            ShowToast(L.T("Finish the current step first, then try again."), isError: true);
+            return;
+        }
+        NexusLink = link.Trim();
+        await ImportNexusLinkCommand.ExecuteAsync(null);
+    }
+
     /// <summary>Mods Menu on Nexus Mods; Phantom Blade Zero's script mods may run in it.</summary>
     private const int ModsMenuModId = 149;
 

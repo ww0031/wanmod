@@ -41,7 +41,8 @@
             <Button DockPanel.Dock="Right" Margin="10,0,0,0" Content="{ui:Loc 'Import'}" ui:Icon.Glyph="&#xE71B;"
                     Command="{Binding ImportNexusLinkCommand}" IsDefault="{Binding IsKeyboardFocusWithin, ElementName=NexusLinkBox}" />
             <TextBox x:Name="NexusLinkBox" Style="{StaticResource TextBox.Search}" Text="{Binding NexusLink, UpdateSourceTrigger=PropertyChanged}"
-                     Tag="{ui:Loc 'Paste a Nexus Mods link, such as https://www.nexusmods.com/phantombladezero/mods/260'}" />
+                     Tag="{ui:Loc 'Paste a Nexus Mods link, such as https://www.nexusmods.com/phantombladezero/mods/260'}"
+                     ToolTip="{ui:Loc 'You can also drag the link of a mod from the browser into this window, or copy it and press Ctrl+V anywhere in the window.'}" />
         </DockPanel>
 
         <!-- The loaders' card is on the Loaders page now; one line here says when it wants the player. -->

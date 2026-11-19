@@ -26,21 +26,23 @@ public sealed record NexusChange(string Version, DateTimeOffset Date, IReadOnlyL
 public static partial class NexusMods
 {
     /// <summary>
-    /// One page of the game's mods, from the public API; no account needed. Adult content is never listed: the site
-    /// leaves it out, and a mod not marked as safe that comes through anyway is dropped here.
+    /// One page of the game's mods, from the public API; no account needed. Adult content is not listed unless
+    /// <paramref name="adult"/> allows it: the site leaves it out, and a mod not marked as safe that comes through
+    /// anyway is dropped here.
     /// </summary>
     public static async Task<NexusModList> ListModsAsync(HttpClient http, string game, NexusSort sort, string? search, int offset, int count,
-        CancellationToken cancellation = default)
+        bool adult = false, CancellationToken cancellation = default)
     {
         var name = string.IsNullOrWhiteSpace(search) ? "" : $", name: [{{ value: {JsonSerializer.Serialize(search.Trim())}, op: WILDCARD }}]";
+        var safe = adult ? "" : ", adultContent: [{ value: false }]";
         var data = await QueryAsync(http,
             $$"""
-            query { mods(filter: { gameDomainName: [{ value: {{JsonSerializer.Serialize(game)}} }], adultContent: [{ value: false }]{{name}} },
+            query { mods(filter: { gameDomainName: [{ value: {{JsonSerializer.Serialize(game)}} }]{{safe}}{{name}} },
               sort: [{ {{SortField(sort)}}: { direction: DESC } }], offset: {{offset}}, count: {{count}}) {
               totalCount nodes { {{ListedFields}} } } }
             """, cancellation);
         var mods = data.GetProperty("mods");
-        var list = mods.GetProperty("nodes").EnumerateArray().Where(IsSafe).Select(Listed).ToList();
+        var list = mods.GetProperty("nodes").EnumerateArray().Where(m => adult || IsSafe(m)).Select(Listed).ToList();
         return new NexusModList(mods.GetProperty("totalCount").GetInt32(), list);
     }
 

@@ -231,7 +231,7 @@
                         </Rectangle.Fill>
                     </Rectangle>
                 </Grid>
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" ScrollChanged="OnPageScrolled">
                     <Grid MaxWidth="1120" Margin="48,0,48,28">
                         <views:GamesView Visibility="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Games}" />
                         <views:HomeView Visibility="{Binding SelectedPage, Converter={StaticResource Page}, ConverterParameter=Home}" />
@@ -362,7 +362,7 @@
                 <TextBlock Margin="0,18,0,0" Style="{StaticResource Text.Display}" FontSize="28"
                            HorizontalAlignment="Center" Text="{ui:Loc 'Drop to install'}" />
                 <TextBlock Margin="0,8,0,0" Style="{StaticResource Text.Body}" HorizontalAlignment="Center"
-                           Text="{ui:Loc '.zip  ·  .7z  ·  .rar  ·  .pak  ·  .utoc  ·  .ucas  ·  folders'}" />
+                           Text="{ui:Loc '.zip  ·  .7z  ·  .rar  ·  .pak  ·  .utoc  ·  .ucas  ·  folders  ·  Nexus Mods links'}" />
             </StackPanel>
         </Grid>
 

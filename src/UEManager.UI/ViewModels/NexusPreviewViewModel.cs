@@ -65,7 +65,8 @@ public sealed partial class NexusPreviewViewModel(NexusBrowseViewModel page, Nex
         _ = LoadPictureAsync();
         try
         {
-            var text = await NexusMods.DescriptionAsync(http, new NexusModRef(page.Game, item.ModId), item.IsInstalled);
+            var text = await NexusMods.DescriptionAsync(http, new NexusModRef(page.Game, item.ModId),
+                item.IsInstalled || page.Owner.ShowAdultContent);
             if (text is null)
             {
                 Error = L.T("This mod is not marked as safe for all ages, so it is not shown.");

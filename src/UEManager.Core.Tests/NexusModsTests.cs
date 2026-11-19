@@ -1,4 +1,8 @@
+using System.Net;
+using System.Text;
+using System.Text.Json;
 using UEManager.Core.Mods;
+using UEManager.Core.Storage;
 
 namespace UEManager.Core.Tests;
 
@@ -93,5 +97,44 @@ public class NexusModsTests
         Assert.Equal((260, Wuchang[2].FileId), NexusMods.DownloadIds(name));
         Assert.Null(NexusMods.DownloadIds("Wuchang Volice 2 260 2 2026-11-01T16-20Z azp3elF3r.zip"));
         Assert.Null(NexusMods.DownloadIds("超广角.zip"));
+    }
+
+    [Fact]
+    public async Task The_list_leaves_adult_content_out_unless_it_is_allowed()
+    {
+        var site = new Site("""
+            { "data": { "mods": { "totalCount": 2, "nodes": [
+              { "modId": 1, "name": "Safe", "adultContent": false },
+              { "modId": 2, "name": "Adult", "adultContent": true } ] } } }
+            """);
+        using var http = new HttpClient(site);
+
+        var safe = await NexusMods.ListModsAsync(http, "phantombladezero", NexusSort.Endorsements, null, 0, 20);
+        Assert.Equal([1], safe.Mods.Select(m => m.ModId));
+        Assert.Contains("adultContent: [{ value: false }]", site.LastQuery);
+
+        var all = await NexusMods.ListModsAsync(http, "phantombladezero", NexusSort.Endorsements, null, 0, 20, adult: true);
+        Assert.Equal([1, 2], all.Mods.Select(m => m.ModId));
+        Assert.DoesNotContain("adultContent: [", site.LastQuery);
+    }
+
+    [Fact]
+    public void The_settings_file_names_adult_content_only_when_it_is_allowed()
+    {
+        Assert.DoesNotContain("showAdultContent", JsonSerializer.Serialize(new AppSettings(), JsonFile.Options));
+        var allowed = JsonSerializer.Serialize(new AppSettings { ShowAdultContent = true }, JsonFile.Options);
+        Assert.True(JsonSerializer.Deserialize<AppSettings>(allowed, JsonFile.Options)!.ShowAdultContent);
+    }
+
+    private sealed class Site(string answer) : HttpMessageHandler
+    {
+        public string LastQuery { get; private set; } = "";
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var body = await request.Content!.ReadAsStringAsync(cancellationToken);
+            LastQuery = JsonDocument.Parse(body).RootElement.GetProperty("query").GetString()!;
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(answer, Encoding.UTF8, "application/json") };
+        }
     }
 }

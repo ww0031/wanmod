@@ -12,7 +12,8 @@ namespace UEManager.UI.ViewModels;
 
 /// <summary>
 /// The Browse page: the game's mods on Nexus Mods, a page at a time, with their names, summaries and descriptions
-/// translated for free into the app's language. Adult content is never shown (see <see cref="NexusMods.ListModsAsync"/>).
+/// translated for free into the app's language. Adult content is not shown (see <see cref="NexusMods.ListModsAsync"/>),
+/// unless the settings file allows it (see <see cref="UEManager.Core.Storage.AppSettings.ShowAdultContent"/>).
 /// </summary>
 public sealed partial class NexusBrowseViewModel : LocalizedObservableObject
 {
@@ -20,7 +21,7 @@ public sealed partial class NexusBrowseViewModel : LocalizedObservableObject
 
     private readonly HttpClient http;
     private readonly FreeTranslator translator;
-    private NexusSort sort = NexusSort.Endorsements;
+    private NexusSort sort;
     private int nextOffset;
     private int loadId;
     private bool loaded;
@@ -31,6 +32,7 @@ public sealed partial class NexusBrowseViewModel : LocalizedObservableObject
         this.http = http;
         this.translator = translator;
         Game = game;
+        sort = owner.BrowseSort;
         Images = new RemoteImages(http);
         UpdateSortOptions();
     }
@@ -41,8 +43,9 @@ public sealed partial class NexusBrowseViewModel : LocalizedObservableObject
     internal string Game { get; }
 
     /// <summary>The line under the search box, with the name of the service that translates.</summary>
-    public string ServiceNote =>
-        L.F($"Adult content is never shown here. Texts are translated for free by {MainViewModel.ServiceName(translator.First)}.");
+    public string ServiceNote => Owner.ShowAdultContent
+        ? L.F($"Texts are translated for free by {MainViewModel.ServiceName(translator.First)}.")
+        : L.F($"Adult content is never shown here. Texts are translated for free by {MainViewModel.ServiceName(translator.First)}.");
 
     internal void RefreshServiceNote() => OnPropertyChanged(nameof(ServiceNote));
 
@@ -149,6 +152,7 @@ public sealed partial class NexusBrowseViewModel : LocalizedObservableObject
         if (value == sort)
             return;
         sort = value;
+        Owner.BrowseSort = value;
         UpdateSortOptions();
         _ = LoadPageAsync(reset: true);
     }
@@ -179,7 +183,7 @@ public sealed partial class NexusBrowseViewModel : LocalizedObservableObject
         {
             var offset = nextOffset;
             var search = await SearchTermAsync(SearchText.Trim());
-            var page = await NexusMods.ListModsAsync(http, Game, sort, search, offset, PageSize);
+            var page = await NexusMods.ListModsAsync(http, Game, sort, search, offset, PageSize, Owner.ShowAdultContent);
             var items = page.Mods.Where(m => Items.All(i => i.ModId != m.ModId)).Select(m => new NexusBrowseItemViewModel(this, m)).ToList();
             await TranslateItemsAsync(items);
             if (id != loadId)

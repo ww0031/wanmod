@@ -2,6 +2,12 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 3.3 (2026-11-20)
+- Duyệt Nexus: các mod tiếp theo tự tải khi bạn cuộn đến cuối, không cần bấm "Tải thêm"
+- Duyệt Nexus: thứ tự sắp xếp bạn chọn lần trước được ghi nhớ
+- Kéo liên kết Nexus Mods của mod từ trình duyệt vào cửa sổ, hoặc sao chép rồi nhấn Ctrl+V trong cửa sổ, là bắt đầu nhập mod
+- Nhật ký thay đổi: cửa sổ này mở một lần sau mỗi bản cập nhật. "Không nhắc lại" chỉ có hiệu lực với phiên bản hiện tại
+
 ## 3.2 (2026-11-20)
 - Chọn lại phần: cửa sổ giờ chỉ đánh dấu những tùy chọn đang có trong game, không đánh dấu tất cả
 - Mod kèm theo UE4SS riêng giờ được cài như một mod và hiện trong danh sách mod. UE4SS đi kèm bị bỏ ra, nên UE4SS trong game của bạn được giữ nguyên, và cửa sổ cài đặt sẽ cho biết điều đó

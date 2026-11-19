@@ -63,7 +63,7 @@
                 <Button DockPanel.Dock="Right" Margin="16,0,0,0" Content="{ui:Loc 'Close'}"
                         Command="{Binding CloseChangelogCommand}" IsCancel="True" />
                 <CheckBox DockPanel.Dock="Right" VerticalAlignment="Center" Content="{ui:Loc 'Do not show again'}" IsChecked="{Binding HideChangelog}"
-                          ToolTip="{ui:Loc 'The changelog no longer opens by itself after an update. Changelog at the bottom left still shows it any time.'}" />
+                          ToolTip="{ui:Loc 'The changelog no longer opens by itself in this version. After an update it opens again. Changelog at the bottom left still shows it any time.'}" />
                 <Button DockPanel.Dock="Left" Content="{ui:Loc 'All releases on GitHub'}" ui:Icon.Glyph="&#xE8A7;"
                         Command="{Binding OpenAllReleasesCommand}" ToolTip="{ui:Loc 'Every release with its full notes'}" />
             </DockPanel>

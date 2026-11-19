@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using UEManager.Core.Mods;
 
 namespace UEManager.Core.Storage;
@@ -26,10 +27,10 @@ public sealed class AppSettings
     /// <summary>The newest app version the banner at start announced; each new version is announced once.</summary>
     public string? AnnouncedUpdate { get; set; }
 
-    /// <summary>The app version whose changelog opened by itself at start; it opens once per version, the first start included.</summary>
+    /// <summary>The app version whose changelog last opened by itself at start; another version is an update, or the first start.</summary>
     public string? ShownChangelog { get; set; }
 
-    /// <summary>The changelog no longer opens by itself after an update: "Do not show again" in its window.</summary>
+    /// <summary>"Do not show again" in the changelog's window: it no longer opens by itself in this version. An update unticks it.</summary>
     public bool HideChangelog { get; set; }
 
     /// <summary>The Mods page's sort column, such as "Name" or "Installed"; null for the default.</summary>
@@ -51,8 +52,18 @@ public sealed class AppSettings
 
     public bool CatalogSortDescending { get; set; }
 
+    /// <summary>The Browse page's order, as the player last chose it.</summary>
+    public NexusSort BrowseSort { get; set; }
+
     /// <summary>The player's personal Nexus Mods API key, for downloads from mod links; null without one.</summary>
     public string? NexusApiKey { get; set; }
+
+    /// <summary>
+    /// The Browse page lists adult content too. Off, and no window has it: it is set in the settings file by hand,
+    /// and written there only when on.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool ShowAdultContent { get; set; }
 
     /// <summary>Where the main window was when it last closed; null opens it centred at its default size.</summary>
     public WindowPlacement? Window { get; set; }

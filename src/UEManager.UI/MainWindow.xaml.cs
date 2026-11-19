@@ -1,8 +1,12 @@
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using UEManager.Core.Mods;
 using UEManager.Core.Storage;
+using UEManager.UI.Services;
 using UEManager.UI.ViewModels;
 
 namespace UEManager.UI;
@@ -21,6 +25,8 @@ public partial class MainWindow : Window
         // Ctrl+F and F5, the keys of these commands, while no dialog covers the window.
         CommandBindings.Add(new CommandBinding(ApplicationCommands.Find, (_, _) => FocusSearch(), CanUseKeys));
         CommandBindings.Add(new CommandBinding(NavigationCommands.Refresh, async (_, _) => await ViewModel!.ReloadAsync(), CanUseKeys));
+        // Ctrl+V while no text box has the keyboard: a mod's Nexus Mods link on the clipboard is imported.
+        CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, (_, _) => PasteLink(), CanUseKeys));
         // The view model comes before the window shows, so it opens where it was last time.
         DataContextChanged += (_, e) =>
         {
@@ -40,6 +46,23 @@ public partial class MainWindow : Window
     private MainViewModel? ViewModel => DataContext as MainViewModel;
 
     private void CanUseKeys(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = ViewModel is { HasOverlay: false };
+
+    /// <summary>Any other text on the clipboard is left alone.</summary>
+    private void PasteLink()
+    {
+        if (ClipboardText.Get() is { } text && NexusMods.ParseUrl(text) is not null)
+            _ = ViewModel!.ImportNexusLinkAsync(text);
+    }
+
+    /// <summary>How near the end of the Browse page's list its next mods are read, so "Load more" needs no click.</summary>
+    private const double LoadMoreDistance = 600;
+
+    private void OnPageScrolled(object sender, ScrollChangedEventArgs e)
+    {
+        if (e.OriginalSource == sender && e.VerticalChange > 0 && e.VerticalOffset + e.ViewportHeight >= e.ExtentHeight - LoadMoreDistance
+            && ViewModel is { SelectedPage: "Browse", Browse: { HasMore: true } browse })
+            browse.LoadMoreCommand.Execute(null);
+    }
 
     /// <summary>A finger that swipes a list past its end would push the whole window aside; the window stays put.</summary>
     protected override void OnManipulationBoundaryFeedback(ManipulationBoundaryFeedbackEventArgs e) => e.Handled = true;
@@ -115,14 +138,21 @@ public partial class MainWindow : Window
     /// <summary>The height of the title bar, as in the window's chrome.</summary>
     private const double TitleBarHeight = 34;
 
-    protected override void OnDragEnter(DragEventArgs e) => OnDragOver(e);
+    /// <summary>What is dragged over the window can be installed; read as the drag enters, not at each move.</summary>
+    private bool canInstallDragged;
+
+    protected override void OnDragEnter(DragEventArgs e)
+    {
+        canInstallDragged = CanInstall(e.Data);
+        OnDragOver(e);
+    }
 
     protected override void OnDragOver(DragEventArgs e)
     {
-        var files = e.Data.GetDataPresent(DataFormats.FileDrop);
-        e.Effects = files ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Effects = !canInstallDragged ? DragDropEffects.None
+            : e.AllowedEffects.HasFlag(DragDropEffects.Copy) ? DragDropEffects.Copy : DragDropEffects.Link;
         if (ViewModel is not null)
-            ViewModel.IsDragOver = files;
+            ViewModel.IsDragOver = canInstallDragged;
         e.Handled = true;
     }
 
@@ -139,7 +169,26 @@ public partial class MainWindow : Window
         ViewModel.IsDragOver = false;
         if (e.Data.GetData(DataFormats.FileDrop) is string[] files)
             _ = ViewModel.InstallAsync(files);
+        else if (DraggedLink(e.Data) is { } link)
+            _ = ViewModel.ImportNexusLinkAsync(link);
         e.Handled = true;
+    }
+
+    /// <summary>Files and folders, or a mod's link from a browser.</summary>
+    internal static bool CanInstall(IDataObject data) => data.GetDataPresent(DataFormats.FileDrop) || DraggedLink(data) is not null;
+
+    /// <summary>The Nexus Mods link of a mod in what is dragged from a browser: a link on a page, or the page's address.</summary>
+    internal static string? DraggedLink(IDataObject data)
+    {
+        try
+        {
+            return data.GetDataPresent(DataFormats.UnicodeText) && data.GetData(DataFormats.UnicodeText) is string text
+                && NexusMods.ParseUrl(text) is not null ? text : null;
+        }
+        catch (COMException)
+        {
+            return null;
+        }
     }
 
     private void OnWindowStateChanged()

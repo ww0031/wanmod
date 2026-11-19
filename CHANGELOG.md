@@ -4,6 +4,12 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 3.3 (2026-11-20)
+- Browse: the next mods load by themselves when you scroll to the end, with no click on "Load more"
+- Browse: the order you chose last time is kept
+- Drag the Nexus Mods link of a mod from your browser into the window, or copy it and press Ctrl+V in the window, and the import starts
+- Changelog: this window opens once after every update. "Do not show again" holds for the current version only
+
 ## 3.2 (2026-11-20)
 - Choose parts again: the window now ticks only the options that are in the game, not every option
 - A mod that comes with its own copy of UE4SS is now installed as a mod and shows in the mod list. The UE4SS in it is left out, so the one in your game stays as it is, and the install window says so

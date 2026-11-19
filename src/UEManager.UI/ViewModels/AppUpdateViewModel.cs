@@ -228,16 +228,21 @@ public sealed partial class AppUpdateViewModel(MainViewModel owner, HttpClient h
     private void CloseChangelog() => IsChangelogOpen = false;
 
     /// <summary>
-    /// The changelog opens by itself once per version, so on the first start and after each update, unless the player
-    /// ticked "Do not show again". While a dialog or the busy screen is open, it waits.
+    /// The changelog opens by itself at start until the player ticks "Do not show again". The tick holds for this
+    /// version only: after an update the changelog opens again, unticked. While a dialog or the busy screen is open, it waits.
     /// </summary>
     public async Task OpenChangelogAtStartAsync()
     {
-        if (owner.HideChangelog || string.Equals(owner.ShownChangelog, AppInfo.Version, StringComparison.OrdinalIgnoreCase))
+        var updated = !string.Equals(owner.ShownChangelog, AppInfo.Version, StringComparison.OrdinalIgnoreCase);
+        if (!updated && owner.HideChangelog)
             return;
         while (owner.HasOverlay)
             await Task.Delay(500);
-        owner.ShownChangelog = AppInfo.Version;
+        if (updated)
+        {
+            owner.ShownChangelog = AppInfo.Version;
+            HideChangelog = false;
+        }
         IsChangelogOpen = true;
     }
 
