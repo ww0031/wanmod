@@ -23,6 +23,12 @@ public sealed partial class MainViewModel
     /// <summary>The newest file per mod id, for the mods with an update; filled by the update check.</summary>
     private readonly Dictionary<string, NexusUpdate> nexusUpdates = [];
 
+    /// <summary>
+    /// The downloads whose parts the player asked to choose again, by name without the extension. They always open the
+    /// install review, also where the choice made before would be taken without asking.
+    /// </summary>
+    private readonly HashSet<string> chosenAgain = new(StringComparer.OrdinalIgnoreCase);
+
     private string? NexusGame => NexusMods.GameOf(Profile.ModPageUrl);
 
     /// <summary>The mod link the player pasted on the Mods page.</summary>
@@ -302,6 +308,31 @@ public sealed partial class MainViewModel
     {
         if (nexusUpdates.TryGetValue(mod.Id, out var update))
             await InstallNexusFileAsync(update.Info, update.File, mod, nxm: null);
+    }
+
+    /// <summary>Whether the mod came from Nexus Mods, so its download can be fetched again.</summary>
+    internal bool IsFromNexus(ModRecord mod) => !mod.Recommended && NexusMods.RefOf(mod, NexusGame) is not null;
+
+    /// <summary>
+    /// Downloads the file a mod was installed from again and installs it over the mod, so the install review asks anew
+    /// which of its parts to take. The file that updates it, when the author no longer offers that one.
+    /// </summary>
+    internal async Task ChoosePartsAgainAsync(ModRecord mod)
+    {
+        if (NexusMods.RefOf(mod, NexusGame) is not { } site)
+            return;
+        NexusModInfo? info = null;
+        if (!await RunAsync(L.T("Reading the mod on Nexus Mods…"), async () => info = await NexusMods.GetModAsync(Http, site)))
+            return;
+        var fileId = mod.SourceFileName is { } source ? NexusMods.DownloadIds(source)?.FileId : null;
+        var file = info!.Files.FirstOrDefault(f => f.FileId == fileId) ?? NexusMods.PickFile(info.Files, ModNaming.SiteFile(mod.SourceFileName)?.Name);
+        if (file is null)
+        {
+            ShowToast(L.F($"\"{info.Name}\" has no file to download on Nexus Mods."), isError: true);
+            return;
+        }
+        chosenAgain.Add(NexusMods.DownloadFileName(info.Ref, file, ""));
+        await InstallNexusFileAsync(info, file, mod, nxm: null);
     }
 
     [RelayCommand]

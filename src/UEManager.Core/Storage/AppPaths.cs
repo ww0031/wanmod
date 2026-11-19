@@ -67,4 +67,7 @@ public sealed class AppPaths
 
     /// <summary>Zips of the game's save folder, made before each launch.</summary>
     public string SaveBackupDir(string gameId) => Path.Combine(GameDir(gameId), "save-backups");
+
+    /// <summary>Downloads of installed mods that have parts to choose from; see <see cref="Mods.StoredPackages"/>.</summary>
+    public string PackagesDir(string gameId) => Path.Combine(GameDir(gameId), "packages");
 }

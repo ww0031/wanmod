@@ -12,6 +12,9 @@ public sealed partial class GameCardViewModel(MainViewModel owner, LibraryGame e
 
     public string Name => owner.NameOf(entry);
 
+    /// <summary>The Steam store gave the game's name in the app's language.</summary>
+    internal void NameChanged() => OnPropertyChanged(string.Empty);
+
     /// <summary>The first letter of the name, on the card of a game without a cover.</summary>
     public string Initial => Name.Length > 0 ? char.ToUpperInvariant(Name[0]).ToString() : "?";
 

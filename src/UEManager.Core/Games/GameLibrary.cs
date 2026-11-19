@@ -21,6 +21,12 @@ public sealed class LibraryGame
     /// <summary>The name the player gave the game; null shows <see cref="Name"/>.</summary>
     public string? CustomName { get; set; }
 
+    /// <summary>
+    /// The game's names in the Steam store in other languages, by Steam's name of the language: 艾尔登法环 for
+    /// "schinese". A language that is here was asked for, and is not asked for again.
+    /// </summary>
+    public Dictionary<string, string> LocalNames { get; set; } = [];
+
     public string RootPath { get; set; } = "";
 
     public GameStore Store { get; set; }

@@ -41,6 +41,9 @@ public partial class MainWindow : Window
 
     private void CanUseKeys(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = ViewModel is { HasOverlay: false };
 
+    /// <summary>A finger that swipes a list past its end would push the whole window aside; the window stays put.</summary>
+    protected override void OnManipulationBoundaryFeedback(ManipulationBoundaryFeedbackEventArgs e) => e.Handled = true;
+
     /// <summary>The search of the UE4SS log on its page, the mod search from every other page.</summary>
     private void FocusSearch()
     {

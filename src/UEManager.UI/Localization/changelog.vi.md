@@ -2,6 +2,15 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 3.1 (2026-11-20)
+- Màn hình cảm ứng: vuốt bằng ngón tay để cuộn mọi danh sách và trang, dễ dùng hơn trên máy chơi game cầm tay
+- Game được quét hiển thị tên tiếng Trung khi có
+- Chi tiết mod: nút mới "Chọn lại phần" cho phép chọn tùy chọn khác của mod từ Nexus sau khi đã cài, ví dụ một kiểu khác
+- Mod từ Nexus có nhiều tùy chọn sẽ giữ lại tệp tải về, nên khi chọn lại không cần tải lại; tệp sẽ bị xóa khi bạn gỡ hoặc cập nhật mod
+- Báo lỗi: nút mới "Báo cáo trên GitHub" sao chép báo cáo và mở trang để bạn gửi cho tác giả; cần có tài khoản GitHub
+- Đã sửa: trên màn hình nhỏ, nút Lưu và Hủy bị khuất sau khi bấm Sửa trong chi tiết mod
+- Đã sửa: "Sao chép báo cáo" đôi khi báo bộ nhớ tạm đang được dùng và không sao chép được
+
 ## 3.0 (2026-11-19)
 - Giờ quản lý mod của mọi game, không chỉ Phantom Blade Zero: thư viện game mới tự tìm các game cài qua Steam và Epic, có ảnh bìa, game chơi gần nhất ở đầu. Tìm kiếm được, hoặc thêm game bằng thư mục của nó
 - Game làm bằng Unreal Engine dùng được mọi tính năng như Phantom Blade Zero; game khác dùng chế độ đơn giản: mod tải về được đặt nguyên vào thư mục game, và gỡ ra sạch sẽ

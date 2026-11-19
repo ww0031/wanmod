@@ -36,6 +36,9 @@ public sealed partial class MainViewModel
     /// <summary>The Steam app whose pictures a game without its own shows, by the game's id, searched once per start.</summary>
     private readonly Dictionary<string, Task<string?>> artSearches = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>The games whose name in a language the Steam store was asked for at this start, as "schinese|steam-1245620".</summary>
+    private readonly HashSet<string> nameSearches = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>The wide picture of the opened game, behind the pages; null for none.</summary>
     private ImageSource? hero;
 
@@ -75,9 +78,14 @@ public sealed partial class MainViewModel
 
     public bool HasBackground => Background is not null;
 
-    /// <summary>A game's name as the library shows it: the player's own, else the store's, a built-in game's in the app's language.</summary>
+    /// <summary>
+    /// A game's name as the library shows it: the player's own, else a built-in game's in the app's language, else the
+    /// Steam store's in that language, as 艾尔登法环, else the name the game came with.
+    /// </summary>
     internal string NameOf(LibraryGame game) =>
-        game.CustomName ?? (GameLibrary.BuiltIn.Any(p => p.Id == game.Id) ? L.T(game.Name) : game.Name);
+        game.CustomName ?? (GameLibrary.BuiltIn.Any(p => p.Id == game.Id) ? L.T(game.Name)
+            : SteamStore.LanguageOf(L.Current.Language) is { } local && game.LocalNames.TryGetValue(local.Language, out var name) ? name
+            : game.Name);
 
     private ICollectionView CreateGamesView()
     {
@@ -117,6 +125,41 @@ public sealed partial class MainViewModel
         GamesView.Refresh();
         OnPropertyChanged(nameof(GamesCountText));
         OnPropertyChanged(nameof(HasNoGames));
+        _ = LoadLocalNamesAsync();
+    }
+
+    /// <summary>
+    /// Asks the Steam store once for the names of the games in the app's language. A game that is not from Steam goes by
+    /// the Steam app whose pictures it shows.
+    /// </summary>
+    private async Task LoadLocalNamesAsync()
+    {
+        if (SteamStore.LanguageOf(L.Current.Language) is not { } local)
+            return;
+        var asked = library.Games
+            .Where(g => (g.SteamAppId ?? g.ArtAppId) is { Length: > 0 } && !g.LocalNames.ContainsKey(local.Language)
+                && nameSearches.Add($"{local.Language}|{g.Id}"))
+            .ToList();
+        if (asked.Count == 0)
+            return;
+        try
+        {
+            var names = await SteamStore.NamesAsync(Http, asked.Select(g => (g.SteamAppId ?? g.ArtAppId)!), local.Language, local.Country);
+            foreach (var game in asked)
+                game.LocalNames[local.Language] = names.GetValueOrDefault((game.SteamAppId ?? game.ArtAppId)!, game.Name);
+            library.TrySave(paths);
+            Log.Info($"The Steam store named {asked.Count} game(s) in {local.Language}.");
+        }
+        catch (ModException ex)
+        {
+            Log.Warn($"The Steam store could not be asked for the games' names in {local.Language}: {ex.Message}");
+            return;
+        }
+        foreach (var card in GameCards)
+            card.NameChanged();
+        GamesView.Refresh();
+        if (CurrentGame is { } current && asked.Contains(current))
+            OnPropertyChanged(string.Empty);
     }
 
     /// <summary>
@@ -163,6 +206,8 @@ public sealed partial class MainViewModel
             game.ArtChecked = appId is null;
             library.TrySave(paths);
             Log.Info(appId is null ? $"The Steam store has no game named \"{game.Name}\" for its pictures." : $"\"{game.Name}\" shows the pictures of Steam app {appId}.");
+            if (appId is not null)
+                _ = LoadLocalNamesAsync();
             return appId;
         }
         catch (ModException ex)

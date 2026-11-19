@@ -241,6 +241,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             settings.Language = value;
             L.Current.SetLanguage(value);
             SaveSettings();
+            _ = LoadLocalNamesAsync();
         }
     }
 
@@ -887,10 +888,11 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     }
 
     /// <summary>Shows the install review and waits for the user; null when cancelled.</summary>
-    private async Task<InstallChoice?> ReviewAsync(InstallPreview preview, CatalogSource? catalog)
+    /// <param name="ask">Shows it also when it would ask nothing new, as for a mod whose parts the player chooses again.</param>
+    private async Task<InstallChoice?> ReviewAsync(InstallPreview preview, CatalogSource? catalog, bool ask = false)
     {
         var dialog = new InstallDialogViewModel(manager!, preview, ShowUe4ssGuide, catalog, InstallLoader);
-        if (dialog.AutoChoice() is { } auto)
+        if (!ask && dialog.AutoChoice() is { } auto)
             return auto;
         InstallDialog = dialog;
         var choice = await dialog.Result;
@@ -906,6 +908,9 @@ public sealed partial class MainViewModel : LocalizedObservableObject
 
     /// <summary>A download stays here until its mod is in, so another try needs no new download, also after a restart.</summary>
     private string DownloadsDir => paths.DownloadsDir;
+
+    /// <summary>The download of an installed mod with parts to choose from stays here, so choosing again needs no new download.</summary>
+    private string PackagesDir => paths.PackagesDir(Profile.Id);
 
     /// <summary>Downloads on their way into the game now; the kept downloads leave them out.</summary>
     private readonly HashSet<string> installingDownloads = new(StringComparer.OrdinalIgnoreCase);
@@ -977,21 +982,38 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         RefreshKeptDownloads();
     }
 
-    /// <summary>The download kept from before with this file name, without its extension; null when there is none.</summary>
+    /// <summary>
+    /// The download kept from before with this file name, without its extension: one whose install did not finish, or
+    /// else the one of an installed mod with parts to choose from. Null when there is none.
+    /// </summary>
     internal string? KeptDownload(string name)
     {
-        if (!Directory.Exists(DownloadsDir))
-            return null;
         var safe = Path.GetFileName(FileDownloader.PathIn(DownloadsDir, name));
-        return Directory.EnumerateFiles(DownloadsDir)
+        return new[] { DownloadsDir, PackagesDir }.Where(Directory.Exists).SelectMany(Directory.EnumerateFiles)
             .FirstOrDefault(f => string.Equals(Path.GetFileNameWithoutExtension(f), safe, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>Deletes the stored downloads of mods that were uninstalled or updated.</summary>
+    private void SweepPackages()
+    {
+        if (manager is null)
+            return;
+        try
+        {
+            StoredPackages.Sweep(PackagesDir, manager.Mods);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Warn($"The stored downloads could not be read: {ex.Message}");
+        }
     }
 
     /// <summary>
     /// One click on a mod's release: download the file in the background, check its size and checksum, and install it.
     /// A download that needs a choice or a look first opens the install review instead: variants, warnings, a mod
     /// installed by hand that it would replace, or settings the player changed. The download is deleted once the mod
-    /// is in; a cancelled review or a failed install keeps it for the next try.
+    /// is in, unless the mod has parts to choose from: then it is stored for choosing again. A cancelled review or a
+    /// failed install keeps it for the next try.
     /// </summary>
     /// <param name="id">What the mod is known by, as its repo.</param>
     /// <param name="urls">Where the file can be downloaded, in order.</param>
@@ -1007,6 +1029,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             return;
         }
         var download = FileDownloader.PathIn(DownloadsDir, fileName);
+        if (!File.Exists(download) && FileDownloader.PathIn(PackagesDir, fileName) is var stored && File.Exists(stored))
+            download = stored;
         if (File.Exists(download) && (size <= 0 || new FileInfo(download).Length == size))
             Log.Info($"Installing '{download}', downloaded before.");
         else
@@ -1041,8 +1065,14 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             while (IsBusy || InstallDialog is not null || Confirm is not null)
                 await Task.Delay(250);
             // Gone when another click on the same update installed it meanwhile.
-            if (File.Exists(download) && await InstallDownloadAsync(id, name, version, download, fileName))
-                TryDeleteFile(download);
+            if (File.Exists(download))
+            {
+                var end = await InstallDownloadAsync(id, name, version, download, fileName);
+                if (end == DownloadEnd.Store)
+                    StorePackage(download);
+                else if (end == DownloadEnd.Delete)
+                    TryDeleteFile(download);
+            }
         }
         finally
         {
@@ -1052,18 +1082,43 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         }
     }
 
-    /// <returns>Whether the download is done with: its mod is in, or it cannot be read. A cancelled review or a failed install keeps it.</returns>
-    private async Task<bool> InstallDownloadAsync(string id, string name, string version, string download, string fileName)
+    /// <summary>What becomes of a download after its install was tried.</summary>
+    private enum DownloadEnd
+    {
+        /// <summary>The review was cancelled or the install failed: it stays for the next try.</summary>
+        TryAgain,
+
+        /// <summary>Its mod is in, or it cannot be read.</summary>
+        Delete,
+
+        /// <summary>Its mod is in and has parts to choose from: it stays for choosing again.</summary>
+        Store,
+    }
+
+    private void StorePackage(string download)
+    {
+        try
+        {
+            StoredPackages.Store(download, PackagesDir);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Warn($"'{download}' could not be stored for choosing again: {ex.Message}");
+            TryDeleteFile(download);
+        }
+    }
+
+    private async Task<DownloadEnd> InstallDownloadAsync(string id, string name, string version, string download, string fileName)
     {
         InstallPreview? preview = null;
         await RunAsync(L.F($"Reading {fileName}…"), async () => preview = await Task.Run(() => manager!.Inspect(download)));
         if (preview is null)
-            return true;
+            return DownloadEnd.Delete;
 
         using (preview)
         {
             if (!await CleanOldModLoaderAsync(preview, id))
-                return false;
+                return DownloadEnd.TryAgain;
             // A loader's other entries are no choice to ask about, unless the player took one before.
             var parts = preview.Packages.Where(p => !p.IsAlternate).ToList();
             var check = manager!.Check(preview, parts, id);
@@ -1075,12 +1130,18 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             // A mod of the card may have several parts, such as PBZModLoader's DLL and its start file: all of them go.
             var ours = string.Equals(id, RecommendedMain.Mod?.Repo, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(id, RecommendedExtra.Mod?.Repo, StringComparison.OrdinalIgnoreCase);
-            var direct = (parts.Count == 1 || ours) && check.CanInstall && check.Warnings.Count == 0 && !check.HasEditedSettings
+            var again = chosenAgain.Contains(Path.GetFileNameWithoutExtension(fileName));
+            var direct = !again && (parts.Count == 1 || ours) && check.CanInstall && check.Warnings.Count == 0 && !check.HasEditedSettings
                 && (check.Replaces is null || string.Equals(check.Replaces.CatalogId, id, StringComparison.OrdinalIgnoreCase));
             var choice = direct
                 ? new InstallChoice(parts, name, version, check.Replaces is not null, id)
-                : await ReviewAsync(preview, new CatalogSource(id, name, version));
-            return choice is not null && await InstallChoiceAsync(preview, choice, showMods: false);
+                : await ReviewAsync(preview, new CatalogSource(id, name, version), ask: again);
+            if (choice is null || !await InstallChoiceAsync(preview, choice, showMods: false))
+                return DownloadEnd.TryAgain;
+            // "Choose parts again" in the mod's details is for mods from Nexus Mods.
+            return !ours && preview.Packages.Count(p => !p.IsAlternate) > 1 && NexusMods.DownloadIds(fileName) is not null
+                ? DownloadEnd.Store
+                : DownloadEnd.Delete;
         }
     }
 
@@ -1974,6 +2035,7 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             UnmanagedCount = 0;
         }
         RefreshKeptDownloads();
+        SweepPackages();
         ue4ss = Game is null ? null : Ue4ssRuntime.Detect(Game);
         installedUe4ssVersion = manager?.InstalledUe4ssVersion;
         OnModsChanged();

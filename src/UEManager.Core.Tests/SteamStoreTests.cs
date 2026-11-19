@@ -34,4 +34,25 @@ public class SteamStoreTests
             SteamStore.SearchNames(["Sil and the Fading World Demo", "Hades II®", "  "]));
         Assert.Equal(["Hades"], SteamStore.SearchNames(["Hades", "HADES"]));
     }
+
+    [Fact]
+    public void The_store_names_the_games_in_the_app_s_language()
+    {
+        // As the store answers for "schinese": an app it does not know comes as appid 0 without a name.
+        var names = SteamStore.ReadNames("""
+            {"response":{"store_items":[
+              {"item_type":0,"id":1245620,"success":1,"visible":true,"name":"艾尔登法环","appid":1245620},
+              {"item_type":0,"id":570,"success":1,"visible":true,"name":"Dota 2","appid":570},
+              {"appid":0,"success":15,"visible":false}]}}
+            """);
+
+        Assert.Equal(2, names.Count);
+        Assert.Equal("艾尔登法环", names["1245620"]);
+        Assert.Equal("Dota 2", names["570"]);
+        Assert.Empty(SteamStore.ReadNames("<html>"));
+        Assert.Empty(SteamStore.ReadNames("""{"response":{}}"""));
+        Assert.Equal(("schinese", "CN"), SteamStore.LanguageOf("zh-CN"));
+        Assert.Equal(("tchinese", "TW"), SteamStore.LanguageOf("zh-TW"));
+        Assert.Null(SteamStore.LanguageOf("en"));
+    }
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using UEManager.Core.Mods;
@@ -13,11 +14,75 @@ public static partial class SteamStore
 {
     private const string SearchUrl = "https://store.steampowered.com/api/storesearch/?l=english&cc=US&term=";
 
+    private const string ItemsUrl = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1?input_json=";
+
+    /// <summary>How many apps one request names.</summary>
+    private const int NamesPerRequest = 100;
+
     /// <summary>The store's address of an app's tall library cover.</summary>
     public static string CoverUrl(string appId) => $"https://shared.steamstatic.com/store_item_assets/steam/apps/{appId}/library_600x900.jpg";
 
     /// <summary>The store's address of an app's wide library background.</summary>
     public static string HeroUrl(string appId) => $"https://shared.steamstatic.com/store_item_assets/steam/apps/{appId}/library_hero.jpg";
+
+    /// <summary>
+    /// Steam's name of one of the app's languages and the country its store answers for, as "schinese" and "CN" for
+    /// "zh-CN". Null for English, the language the games' names are in already.
+    /// </summary>
+    public static (string Language, string Country)? LanguageOf(string appLanguage) => appLanguage switch
+    {
+        "zh-CN" => ("schinese", "CN"),
+        "zh-TW" => ("tchinese", "TW"),
+        "vi" => ("vietnamese", "VN"),
+        _ => null,
+    };
+
+    /// <summary>
+    /// The names the store gives apps in a language, by app id: 艾尔登法环 for 1245620 in "schinese". An app without a
+    /// name in the language comes with its English one; an app the store does not know is left out.
+    /// </summary>
+    /// <exception cref="ModException">The store could not be reached.</exception>
+    public static async Task<IReadOnlyDictionary<string, string>> NamesAsync(HttpClient http, IEnumerable<string> appIds, string language,
+        string country, CancellationToken cancellation = default)
+    {
+        var names = new Dictionary<string, string>();
+        var ids = appIds.Where(id => id.Length is > 0 and < 12 && id.All(char.IsAsciiDigit)).Distinct();
+        foreach (var batch in ids.Chunk(NamesPerRequest))
+        {
+            var input = JsonSerializer.Serialize(new
+            {
+                ids = batch.Select(id => new { appid = long.Parse(id, CultureInfo.InvariantCulture) }),
+                context = new { language, country_code = country },
+                data_request = new { include_basic_info = true },
+            });
+            foreach (var (id, name) in ReadNames(await GetAsync(http, ItemsUrl + Uri.EscapeDataString(input), cancellation)))
+                names[id] = name;
+        }
+        return names;
+    }
+
+    /// <summary>The app ids and names in the store's answer to <see cref="NamesAsync"/>.</summary>
+    internal static IReadOnlyDictionary<string, string> ReadNames(string json)
+    {
+        var names = new Dictionary<string, string>();
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            if (!document.RootElement.TryGetProperty("response", out var response)
+                || !response.TryGetProperty("store_items", out var items) || items.ValueKind != JsonValueKind.Array)
+                return names;
+            foreach (var item in items.EnumerateArray())
+            {
+                if (item.TryGetProperty("appid", out var id) && id.ValueKind == JsonValueKind.Number && id.GetRawText() != "0"
+                    && item.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String && name.GetString() is { Length: > 0 } text)
+                    names[id.GetRawText()] = text;
+            }
+        }
+        catch (JsonException)
+        {
+        }
+        return names;
+    }
 
     /// <summary>The app id of the game with one of these names; a demo's name is also tried without "Demo". Null when none matches.</summary>
     /// <param name="except">An app id that does not count, the game's own when its pictures are missing.</param>

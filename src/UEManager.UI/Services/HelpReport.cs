@@ -34,6 +34,9 @@ internal static partial class HelpReport
 
     private const int MaxUnmanagedNames = 10;
 
+    /// <summary>How much of the player's words the title of an issue takes.</summary>
+    private const int MaxTitleLength = 60;
+
     /// <summary>Everything but the player's words. Reads the logs, so it runs off the UI thread.</summary>
     public static string Collect(HelpFacts facts)
     {
@@ -93,6 +96,18 @@ internal static partial class HelpReport
         var words = string.IsNullOrWhiteSpace(problem) ? "(not described)" : problem.Trim().Replace("```", "'''");
         return Privacy.HideUser(string.Join(Environment.NewLine,
             "```text", $"{AppInfo.Name} help report", "", "What happened:", words, "", facts, "```"));
+    }
+
+    /// <summary>
+    /// GitHub's page for a new issue of this app, with the first line of the player's words as its title and a line
+    /// that says to paste. The report goes by the clipboard: it can be longer than an address may be.
+    /// </summary>
+    public static string IssueUrl(string problem, string pasteHint)
+    {
+        var title = Privacy.HideUser(problem.Trim().Split('\r', '\n')[0].Trim());
+        if (title.Length > MaxTitleLength)
+            title = title[..(char.IsHighSurrogate(title[MaxTitleLength - 1]) ? MaxTitleLength - 1 : MaxTitleLength)] + "…";
+        return $"{AppInfo.ForkUrl}/issues/new?title={Uri.EscapeDataString(title)}&body={Uri.EscapeDataString(pasteHint)}";
     }
 
     private static string StoreText(GameInstall game) => game.Store switch

@@ -562,7 +562,7 @@
                                        IsHitTestVisible="False" Visibility="Collapsed" VerticalAlignment="Center" />
                             <!-- TextBox applies its Padding inside the content host itself. -->
                             <ScrollViewer x:Name="PART_ContentHost"
-                                          VerticalAlignment="Center" Focusable="False"
+                                          VerticalAlignment="Center" Focusable="False" PanningMode="None"
                                           HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden" />
                         </Grid>
                     </Border>
@@ -597,7 +597,7 @@
                                        Padding="2,0,0,0" Foreground="{StaticResource Brush.TextDim}" TextTrimming="CharacterEllipsis"
                                        IsHitTestVisible="False" Visibility="Collapsed" VerticalAlignment="Center" />
                             <ScrollViewer x:Name="PART_ContentHost"
-                                          VerticalAlignment="Center" Focusable="False"
+                                          VerticalAlignment="Center" Focusable="False" PanningMode="None"
                                           HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden" />
                             <Button x:Name="ClearButton" Width="24" Height="24" Margin="0,0,4,0" HorizontalAlignment="Right" VerticalAlignment="Center"
                                     Style="{StaticResource Button.Icon}" ui:Icon.Glyph="&#xE711;" Focusable="False" ToolTip="Esc"
@@ -809,8 +809,10 @@
         </Style.Triggers>
     </Style>
 
-    <!-- The square where both scroll bars meet takes the Windows control colour, a light grey, unless told otherwise. -->
+    <!-- The square where both scroll bars meet takes the Windows control colour, a light grey, unless told otherwise.
+         A finger scrolls every list and page, as on a handheld PC; a one-line text box leaves the swipe to its page. -->
     <Style TargetType="ScrollViewer">
+        <Setter Property="PanningMode" Value="Both" />
         <Style.Resources>
             <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Transparent" />
         </Style.Resources>

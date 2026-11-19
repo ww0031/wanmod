@@ -4,6 +4,15 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 3.1 (2026-11-20)
+- Touch screens: swipe with a finger to scroll every list and page, which makes the app easier to use on a handheld PC
+- Games the scan finds show their Chinese name when they have one
+- Mod details: the new "Choose parts again" button lets you pick other options of a mod from Nexus after it is installed, such as another style
+- A mod from Nexus with several options keeps its download, so choosing again needs no new download; the download is deleted once you uninstall or update the mod
+- Report a problem: the new "Report on GitHub" button copies the report and opens the page where you post it to the author; this needs a GitHub account
+- Fixed: on a small screen, the Save and Cancel buttons were out of view after clicking Edit in the mod details
+- Fixed: "Copy report" sometimes said the clipboard is in use and copied nothing
+
 ## 3.0 (2026-11-19)
 - Now manages the mods of every game, not only Phantom Blade Zero: the new game library finds the games of Steam and Epic by itself, with their covers and the last played first. Search them, or add a game by its folder
 - Games made with Unreal Engine get everything the app does for Phantom Blade Zero; other games get a simple mode that puts a download into the game folder as it is, and takes it out again cleanly

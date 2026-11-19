@@ -351,7 +351,6 @@
   "Saves not backed up": "存檔未備份",
   "Saving the set…": "正在儲存組合…",
   "Saving…": "正在儲存…",
-  "Say in a few words what happened and what you did just before. The manager adds facts about the game, UE4SS and your mods, and leaves out your Windows user name. Nothing is sent: copy the report and paste it where you ask for help.": "請用幾句話說明發生了什麼事，以及事發前你做了什麼。管理器會補充遊戲、UE4SS 和模組的資訊，並省略你的 Windows 使用者名稱。報告不會自動傳送：請複製後貼到你求助的地方。",
   "Script loader": "腳本載入器",
   "Search again": "重新搜尋",
   "Search the log, such as a mod name": "搜尋日誌，例如模組名稱",
@@ -794,5 +793,11 @@
   "A mod manager for all your games. Unreal Engine games get packaged mods (.pak, .utoc and .ucas), Blueprint mods, and UE4SS Lua and DLL mods; other games are managed in generic mode, where mods go into a folder you choose. It keeps its own copy of every mod, and records a checksum for every file it places. Files it did not place are never overwritten or removed.": "適用於各種遊戲的模組管理器。虛幻引擎遊戲支援封裝模組（.pak、.utoc、.ucas）、藍圖模組和 UE4SS Lua、DLL 模組；其他遊戲以通用模式管理，模組放進你選的資料夾。管理器為每個模組保留副本，並記錄每個部署檔案的校驗和，不會覆蓋或刪除非自身部署的檔案。",
   "This app is a modified version.": "本軟體為修改版。",
   "The Steam store answered {0} {1}.": "Steam 商店回應 {0} {1}。",
-  "The Steam store could not be reached: {0}": "無法連線 Steam 商店：{0}"
+  "The Steam store could not be reached: {0}": "無法連線 Steam 商店：{0}",
+  "Choose parts again": "重選內容",
+  "Downloads the mod from Nexus Mods again and asks which of its parts to install": "從 N網重新下載這個模組，安裝時可以重新勾選要裝的內容",
+  "Say in a few words what happened and what you did just before. The manager adds facts about the game, UE4SS and your mods, and leaves out your Windows user name. Nothing is sent by itself: copy the report and paste it where you ask for help, or post it on GitHub.": "請用幾句話說明發生了什麼事，以及事發前你做了什麼。管理器會補充遊戲、UE4SS 和模組的資訊，並省略你的 Windows 使用者名稱。報告不會自動傳送：可以複製後貼到你求助的地方，也可以點「去 GitHub 回報」傳給作者。",
+  "Report on GitHub": "去 GitHub 回報",
+  "Copied. On the GitHub page that opened, press Ctrl+V to paste it, then post it. This needs a GitHub account.": "已複製。請在開啟的 GitHub 頁面按 Ctrl+V 貼上，然後送出。需要登入 GitHub 帳號。",
+  "Press Ctrl+V here to paste the report, then post it.": "請在這裡按 Ctrl+V 貼上報告，然後送出。"
 }

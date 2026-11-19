@@ -99,6 +99,16 @@ public sealed partial class ModDetailsViewModel(MainViewModel owner, ModRecord m
     [RelayCommand]
     private void Close() => owner.CloseModDetails();
 
+    /// <summary>A mod from Nexus Mods can be downloaded again, to take other parts of it than at its install.</summary>
+    public bool CanChooseParts => owner.IsFromNexus(mod);
+
+    [RelayCommand]
+    private Task ChooseParts()
+    {
+        owner.CloseModDetails();
+        return owner.ChoosePartsAgainAsync(mod);
+    }
+
     /// <summary>Files changed outside the manager stop a disable, an update and an uninstall, until the player keeps them.</summary>
     public bool HasChangedFiles => changedFiles.Count > 0;
 

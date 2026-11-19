@@ -351,7 +351,6 @@
   "Saves not backed up": "Chưa sao lưu bản lưu",
   "Saving the set…": "Đang lưu bộ mod…",
   "Saving…": "Đang lưu…",
-  "Say in a few words what happened and what you did just before. The manager adds facts about the game, UE4SS and your mods, and leaves out your Windows user name. Nothing is sent: copy the report and paste it where you ask for help.": "Hãy nói ngắn gọn điều gì đã xảy ra và bạn vừa làm gì ngay trước đó. Trình quản lý thêm thông tin về game, UE4SS và các mod của bạn, và bỏ tên người dùng Windows của bạn ra. Không có gì được gửi đi: hãy sao chép báo cáo và dán vào nơi bạn hỏi trợ giúp.",
   "Script loader": "Trình nạp script",
   "Search again": "Tìm lại",
   "Search the log, such as a mod name": "Tìm trong nhật ký, ví dụ tên một mod",
@@ -794,5 +793,11 @@
   "A mod manager for all your games. Unreal Engine games get packaged mods (.pak, .utoc and .ucas), Blueprint mods, and UE4SS Lua and DLL mods; other games are managed in generic mode, where mods go into a folder you choose. It keeps its own copy of every mod, and records a checksum for every file it places. Files it did not place are never overwritten or removed.": "Trình quản lý mod cho mọi game của bạn. Game Unreal Engine hỗ trợ mod đóng gói (.pak, .utoc và .ucas), mod Blueprint, và mod UE4SS Lua, DLL; các game khác được quản lý ở chế độ chung, mod được đặt vào thư mục bạn chọn. Trình quản lý giữ bản sao của mọi mod và ghi lại checksum của mọi tệp nó đặt vào. Tệp không do nó đặt vào sẽ không bao giờ bị ghi đè hay xóa.",
   "This app is a modified version.": "Ứng dụng này là phiên bản đã sửa đổi.",
   "The Steam store answered {0} {1}.": "Cửa hàng Steam trả lời {0} {1}.",
-  "The Steam store could not be reached: {0}": "Không kết nối được cửa hàng Steam: {0}"
+  "The Steam store could not be reached: {0}": "Không kết nối được cửa hàng Steam: {0}",
+  "Choose parts again": "Chọn lại phần",
+  "Downloads the mod from Nexus Mods again and asks which of its parts to install": "Tải lại mod từ Nexus Mods và hỏi lại những phần cần cài",
+  "Say in a few words what happened and what you did just before. The manager adds facts about the game, UE4SS and your mods, and leaves out your Windows user name. Nothing is sent by itself: copy the report and paste it where you ask for help, or post it on GitHub.": "Hãy nói ngắn gọn điều gì đã xảy ra và bạn vừa làm gì ngay trước đó. Trình quản lý thêm thông tin về game, UE4SS và các mod của bạn, và bỏ tên người dùng Windows của bạn ra. Không có gì tự động được gửi đi: hãy sao chép báo cáo và dán vào nơi bạn hỏi trợ giúp, hoặc đăng lên GitHub.",
+  "Report on GitHub": "Báo cáo trên GitHub",
+  "Copied. On the GitHub page that opened, press Ctrl+V to paste it, then post it. This needs a GitHub account.": "Đã sao chép. Trên trang GitHub vừa mở, nhấn Ctrl+V để dán rồi gửi. Cần có tài khoản GitHub.",
+  "Press Ctrl+V here to paste the report, then post it.": "Nhấn Ctrl+V tại đây để dán báo cáo, rồi gửi."
 }

@@ -1,7 +1,5 @@
 using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using UEManager.Core;
@@ -175,14 +173,9 @@ public sealed partial class Ue4ssLogViewModel(MainViewModel owner) : LocalizedOb
     {
         if (log is null)
             return;
-        try
-        {
-            Clipboard.SetText(string.Join(Environment.NewLine, log.Lines.Select(l => l.Text)));
+        if (ClipboardText.Set(string.Join(Environment.NewLine, log.Lines.Select(l => l.Text))) is { } error)
+            owner.ShowToast(L.F($"The clipboard is in use by another app: {error}"), isError: true);
+        else
             owner.ShowToast(L.T("The UE4SS log is on the clipboard."));
-        }
-        catch (COMException ex)
-        {
-            owner.ShowToast(L.F($"The clipboard is in use by another app: {ex.Message}"), isError: true);
-        }
     }
 }

@@ -351,7 +351,6 @@
   "Saves not backed up": "存档未备份",
   "Saving the set…": "正在保存组合…",
   "Saving…": "正在保存…",
-  "Say in a few words what happened and what you did just before. The manager adds facts about the game, UE4SS and your mods, and leaves out your Windows user name. Nothing is sent: copy the report and paste it where you ask for help.": "请简要描述问题和发生前的操作。管理器会补充游戏、UE4SS 和模组信息，并隐藏您的 Windows 用户名。报告不会自动发送，请复制后粘贴到你求助的地方。",
   "Script loader": "脚本加载器",
   "Search again": "重新搜索",
   "Search the log, such as a mod name": "搜索日志，例如模组名称",
@@ -794,5 +793,11 @@
   "A mod manager for all your games. Unreal Engine games get packaged mods (.pak, .utoc and .ucas), Blueprint mods, and UE4SS Lua and DLL mods; other games are managed in generic mode, where mods go into a folder you choose. It keeps its own copy of every mod, and records a checksum for every file it places. Files it did not place are never overwritten or removed.": "适用于各种游戏的模组管理器。虚幻引擎游戏支持打包模组（.pak、.utoc、.ucas）、蓝图模组和 UE4SS Lua、DLL 模组；其他游戏用通用模式管理，模组放进你选的文件夹。管理器为每个模组保留副本，并记录每个部署文件的校验和，不会覆盖或删除非自身部署的文件。",
   "This app is a modified version.": "本软件为修改版。",
   "The Steam store answered {0} {1}.": "Steam 商店返回 {0} {1}。",
-  "The Steam store could not be reached: {0}": "无法连接 Steam 商店：{0}"
+  "The Steam store could not be reached: {0}": "无法连接 Steam 商店：{0}",
+  "Choose parts again": "重选内容",
+  "Downloads the mod from Nexus Mods again and asks which of its parts to install": "从 N网重新下载这个模组，安装时可以重新勾选要装的内容",
+  "Say in a few words what happened and what you did just before. The manager adds facts about the game, UE4SS and your mods, and leaves out your Windows user name. Nothing is sent by itself: copy the report and paste it where you ask for help, or post it on GitHub.": "请简要描述问题和发生前的操作。管理器会补充游戏、UE4SS 和模组信息，并隐藏您的 Windows 用户名。报告不会自动发送：可以复制后粘贴到你求助的地方，也可以点“去 GitHub 反馈”发给作者。",
+  "Report on GitHub": "去 GitHub 反馈",
+  "Copied. On the GitHub page that opened, press Ctrl+V to paste it, then post it. This needs a GitHub account.": "已复制。请在打开的 GitHub 页面里按 Ctrl+V 粘贴，然后提交。需要登录 GitHub 账号。",
+  "Press Ctrl+V here to paste the report, then post it.": "请在这里按 Ctrl+V 粘贴报告，然后提交。"
 }
