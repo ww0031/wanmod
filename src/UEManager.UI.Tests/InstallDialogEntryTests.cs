@@ -258,4 +258,57 @@ public sealed class InstallDialogEntryTests : IDisposable
 
         Assert.False(dialog.HasPlaces);
     }
+
+    [Fact]
+    public void Choosing_again_ticks_only_the_parts_in_the_game()
+    {
+        File(@"Pack\One_P.pak");
+        File(@"Pack\Two_P.pak");
+        File(@"Pack\Three_P.pak");
+        var manager = Manager();
+        using var preview = manager.Inspect(Path.Combine(root, "Pack"));
+        manager.Install(preview, preview.Packages.Where(p => p.Name != "Two_P").ToList(), "Pack", null, catalogId: "someone/pack");
+
+        var dialog = new InstallDialogViewModel(manager, preview, () => { }, new CatalogSource("someone/pack", "Pack", "1.0"));
+        Assert.Equal(3, dialog.Packages.Count(p => p.IsSelected));
+
+        dialog.SelectInstalled();
+
+        Assert.Equal(["One_P", "Three_P"], dialog.Packages.Where(p => p.IsSelected).Select(p => p.Package.Name).Order());
+        Assert.True(dialog.InstallCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void Choosing_again_ticks_the_variant_of_each_choice_that_is_in_the_game()
+    {
+        File(@"Outfit\Leg\01-stockings\Leg_P.pak");
+        File(@"Outfit\Leg\02-bare\Leg_P.pak");
+        File(@"Outfit\Cloth\01-with\Cloth_P.pak");
+        File(@"Outfit\Cloth\02-without\Cloth_P.pak");
+        File(@"Outfit\Base\Body_P.pak");
+        var manager = Manager();
+        using var preview = manager.Inspect(Path.Combine(root, "Outfit"));
+        string[] taken = ["Leg/02-bare", "Cloth/01-with", "Base"];
+        manager.Install(preview, preview.Packages.Where(p => taken.Contains(p.Folder)).ToList(), "Outfit", null, catalogId: "someone/outfit");
+
+        var dialog = new InstallDialogViewModel(manager, preview, () => { }, new CatalogSource("someone/outfit", "Outfit", "1.0"));
+        dialog.SelectInstalled();
+
+        Assert.Equal(taken.Order(), dialog.Packages.Where(p => p.IsSelected).Select(p => p.Package.Folder).Order());
+        Assert.True(dialog.InstallCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void Choosing_again_keeps_the_usual_ticks_for_a_mod_that_is_not_in_the_game()
+    {
+        File(@"Pack\One_P.pak");
+        File(@"Pack\Two_P.pak");
+        var manager = Manager();
+        using var preview = manager.Inspect(Path.Combine(root, "Pack"));
+
+        var dialog = new InstallDialogViewModel(manager, preview, () => { }, new CatalogSource("someone/pack", "Pack", "1.0"));
+        dialog.SelectInstalled();
+
+        Assert.Equal(2, dialog.Packages.Count(p => p.IsSelected));
+    }
 }

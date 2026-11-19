@@ -799,5 +799,6 @@
   "Say in a few words what happened and what you did just before. The manager adds facts about the game, UE4SS and your mods, and leaves out your Windows user name. Nothing is sent by itself: copy the report and paste it where you ask for help, or post it on GitHub.": "Hãy nói ngắn gọn điều gì đã xảy ra và bạn vừa làm gì ngay trước đó. Trình quản lý thêm thông tin về game, UE4SS và các mod của bạn, và bỏ tên người dùng Windows của bạn ra. Không có gì tự động được gửi đi: hãy sao chép báo cáo và dán vào nơi bạn hỏi trợ giúp, hoặc đăng lên GitHub.",
   "Report on GitHub": "Báo cáo trên GitHub",
   "Copied. On the GitHub page that opened, press Ctrl+V to paste it, then post it. This needs a GitHub account.": "Đã sao chép. Trên trang GitHub vừa mở, nhấn Ctrl+V để dán rồi gửi. Cần có tài khoản GitHub.",
-  "Press Ctrl+V here to paste the report, then post it.": "Nhấn Ctrl+V tại đây để dán báo cáo, rồi gửi."
+  "Press Ctrl+V here to paste the report, then post it.": "Nhấn Ctrl+V tại đây để dán báo cáo, rồi gửi.",
+  "This download brings its own UE4SS. The manager leaves it out and installs the rest as a mod, so the UE4SS in your game stays as it is. If UE4SS is not in the game yet, install it on the Loaders page. If the mod does not work then, see its install notes.": "Tệp tải về này kèm theo UE4SS riêng. Trình quản lý bỏ nó ra và cài phần còn lại như một mod, nên UE4SS trong game của bạn được giữ nguyên. Nếu game chưa có UE4SS, hãy cài ở trang Trình nạp. Nếu sau đó mod vẫn không chạy, hãy xem hướng dẫn cài đặt của nó."
 }

@@ -15,6 +15,7 @@ public sealed class InstallPreview : IDisposable
         LeftOutFiles = scan.LeftOutFiles;
         NestedArchiveCount = scan.NestedArchiveCount;
         ContainsUe4ssRuntime = scan.ContainsUe4ssRuntime;
+        BringsUe4ss = scan.BringsUe4ss;
         SuggestedName = suggestedName;
         SuggestedVersion = suggestedVersion;
     }
@@ -37,8 +38,11 @@ public sealed class InstallPreview : IDisposable
 
     public int NestedArchiveCount { get; }
 
-    /// <summary>The download is (or bundles) the UE4SS runtime itself, which the manager does not install.</summary>
+    /// <summary>The download is the UE4SS runtime itself, which is not a mod.</summary>
     public bool ContainsUe4ssRuntime { get; }
+
+    /// <summary>A mod that brings UE4SS along: the parts are the mod, and UE4SS's own files are left out.</summary>
+    public bool BringsUe4ss { get; }
 
     public string SuggestedName { get; }
 

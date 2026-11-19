@@ -2,6 +2,10 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 3.2 (2026-11-20)
+- Chọn lại phần: cửa sổ giờ chỉ đánh dấu những tùy chọn đang có trong game, không đánh dấu tất cả
+- Mod kèm theo UE4SS riêng giờ được cài như một mod và hiện trong danh sách mod. UE4SS đi kèm bị bỏ ra, nên UE4SS trong game của bạn được giữ nguyên, và cửa sổ cài đặt sẽ cho biết điều đó
+
 ## 3.1 (2026-11-20)
 - Màn hình cảm ứng: vuốt bằng ngón tay để cuộn mọi danh sách và trang, dễ dùng hơn trên máy chơi game cầm tay
 - Game được quét hiển thị tên tiếng Trung khi có

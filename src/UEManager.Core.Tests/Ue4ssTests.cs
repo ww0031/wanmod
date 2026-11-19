@@ -207,6 +207,65 @@ public class Ue4ssTests : IDisposable
     }
 
     [Fact]
+    public void A_mod_that_brings_ue4ss_is_installed_without_it()
+    {
+        folder.File(@"Downloads\Hair\dwmapi.dll");
+        folder.File(@"Downloads\Hair\ue4ss\UE4SS.dll");
+        folder.File(@"Downloads\Hair\ue4ss\UE4SS-settings.ini");
+        folder.File(@"Downloads\Hair\ue4ss\UE4SS_Signatures\GUObjectArray.lua");
+        folder.File(@"Downloads\Hair\ue4ss\Mods\mods.txt");
+        folder.File(@"Downloads\Hair\ue4ss\Mods\BPModLoaderMod\Scripts\main.lua");
+        folder.File(@"Downloads\Hair\ue4ss\Mods\shared\UEHelpers\UEHelpers.lua");
+        folder.File(@"Downloads\Hair\ue4ss\Mods\shared\json\json.lua");
+        folder.File(@"Downloads\Hair\ue4ss\Mods\HairMod\Scripts\main.lua");
+        folder.File(@"Downloads\Hair\Content\Paks\~mods\Hair_P.pak");
+        using var preview = manager.Inspect(folder.Combine("Downloads", "Hair"));
+
+        Assert.False(preview.ContainsUe4ssRuntime);
+        Assert.True(preview.BringsUe4ss);
+        Assert.Equal(["HairMod", "Hair_P"], preview.Packages.Select(p => p.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(
+            new[] { "HairMod/Scripts/main.lua", "shared/json/json.lua" },
+            preview.Packages.Single(p => p.Name == "HairMod").RelativePaths.Order(StringComparer.Ordinal));
+        Assert.Empty(preview.IgnoredFiles);
+
+        var check = manager.Check(preview, preview.Packages.ToList());
+
+        Assert.True(check.CanInstall);
+        Assert.Contains(check.Warnings, w => w.ToString().Contains("brings its own UE4SS"));
+        manager.Install(preview, preview.Packages.ToList(), "Hair", null);
+        Assert.False(File.Exists(Path.Combine(Win64, "dwmapi.dll")));
+        Assert.False(File.Exists(Path.Combine(Win64, "ue4ss", "UE4SS.dll")));
+        Assert.True(File.Exists(Path.Combine(Win64, "ue4ss", "Mods", "HairMod", "Scripts", "main.lua")));
+        Assert.True(File.Exists(Path.Combine(game.ModsPath, "Hair_P.pak")));
+    }
+
+    [Fact]
+    public void A_mod_that_brings_ue4ss_2_is_installed_without_it()
+    {
+        folder.File(@"Downloads\Old\UE4SS.dll");
+        folder.File(@"Downloads\Old\UE4SS-settings.ini");
+        folder.File(@"Downloads\Old\xinput1_3.dll");
+        folder.File(@"Downloads\Old\Mods\mods.txt");
+        folder.File(@"Downloads\Old\Mods\Keybinds\Scripts\main.lua");
+        folder.File(@"Downloads\Old\Mods\OldMod\Scripts\main.lua");
+        using var preview = manager.Inspect(folder.Combine("Downloads", "Old"));
+
+        Assert.True(preview.BringsUe4ss);
+        Assert.Equal("OldMod", Assert.Single(preview.Packages).Name);
+        Assert.Empty(preview.IgnoredFiles);
+    }
+
+    [Fact]
+    public void A_mod_without_ue4ss_says_nothing_about_it()
+    {
+        using var preview = manager.Inspect(LuaDownload("DashTest"));
+
+        Assert.False(preview.BringsUe4ss);
+        Assert.DoesNotContain(manager.Check(preview, preview.Packages.ToList()).Warnings, w => w.ToString().Contains("brings its own UE4SS"));
+    }
+
+    [Fact]
     public void Blueprint_paks_go_to_logic_mods()
     {
         folder.File(@"Downloads\BpMod\Content\Paks\LogicMods\BpMod_P.pak");

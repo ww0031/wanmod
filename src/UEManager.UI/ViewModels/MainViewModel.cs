@@ -894,6 +894,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         var dialog = new InstallDialogViewModel(manager!, preview, ShowUe4ssGuide, catalog, InstallLoader);
         if (!ask && dialog.AutoChoice() is { } auto)
             return auto;
+        if (ask)
+            dialog.SelectInstalled();
         InstallDialog = dialog;
         var choice = await dialog.Result;
         InstallDialog = null;

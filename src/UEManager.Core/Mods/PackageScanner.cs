@@ -211,12 +211,15 @@ public sealed class PackageGroup
 
 /// <param name="IgnoredFiles">The download's other files, such as readmes and screenshots: their paths from its top, in order.</param>
 /// <param name="LeftOutFiles">Those of the other files that a mod may need.</param>
+/// <param name="ContainsUe4ssRuntime">The download is UE4SS itself: nothing but UE4SS's own files is in it.</param>
+/// <param name="BringsUe4ss">A mod that brings UE4SS along: UE4SS's own files are left out, and the parts are the mod.</param>
 public sealed record ScanResult(
     IReadOnlyList<PackageGroup> Packages,
     IReadOnlyList<string> IgnoredFiles,
     IReadOnlyList<string> LeftOutFiles,
     int NestedArchiveCount,
-    bool ContainsUe4ssRuntime)
+    bool ContainsUe4ssRuntime,
+    bool BringsUe4ss = false)
 {
     public int IgnoredFileCount => IgnoredFiles.Count;
 }
@@ -245,6 +248,11 @@ public static class PackageScanner
     {
         var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(stagingDir));
         var files = Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories).ToList();
+        // A mod that brings UE4SS along: UE4SS's own files stay out, and what is left is the mod.
+        var runtimes = files.Where(f => Path.GetFileName(f).Equals("UE4SS.dll", StringComparison.OrdinalIgnoreCase))
+            .Select(f => Path.GetDirectoryName(f)!)
+            .ToList();
+        files.RemoveAll(f => IsUe4ssOwn(f, runtimes));
         var drafts = new List<Draft>();
 
         var ue4ssRoots = Ue4ssModRoots(files);
@@ -417,8 +425,41 @@ public static class PackageScanner
         var placed = used.Select(f => Path.GetFileName(f)).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var leftOut = ignored.Where(f => !placed.Contains(Path.GetFileName(f)) && MayMatter(f, projectFolder, exeFolder)).ToList();
         var nestedArchives = files.Count(f => FileSystem.HasExtension(f, FileSystem.ArchiveExtensions));
-        var runtime = files.Any(f => Path.GetFileName(f).Equals("UE4SS.dll", StringComparison.OrdinalIgnoreCase));
-        return new ScanResult(packages, ignored, leftOut, nestedArchives, runtime);
+        var runtime = runtimes.Count > 0;
+        return new ScanResult(packages, ignored, leftOut, nestedArchives, runtime && packages.Count == 0, runtime && packages.Count > 0);
+    }
+
+    /// <summary>UE4SS 2.x's files next to the game's exe, where a mod's files may be too.</summary>
+    private static readonly string[] OldUe4ssFiles = ["UE4SS.dll", "UE4SS.pdb", "UE4SS-settings.ini", "xinput1_3.dll"];
+
+    /// <summary>UE4SS's own libraries in its shared folder; any other one there is a mod's.</summary>
+    private static readonly string[] Ue4ssShared = ["Types.lua", "UEHelpers", "jsbProfiler"];
+
+    /// <summary>
+    /// Whether a file of a download is UE4SS's own: the folder that holds UE4SS.dll with all in it, and dwmapi.dll next
+    /// to a folder named ue4ss. In its Mods folder, the folders of mods that UE4SS does not come with are not, and
+    /// neither are their libraries in the shared folder.
+    /// </summary>
+    /// <param name="runtimes">The folders that hold a UE4SS.dll.</param>
+    private static bool IsUe4ssOwn(string file, IReadOnlyList<string> runtimes)
+    {
+        foreach (var runtime in runtimes)
+        {
+            var ownFolder = Path.GetFileName(runtime).Equals("ue4ss", StringComparison.OrdinalIgnoreCase);
+            if (ownFolder && Path.GetFileName(file).Equals("dwmapi.dll", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(Path.GetDirectoryName(file), Path.GetDirectoryName(runtime), StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (!IsInside(file, runtime))
+                continue;
+            var parts = Path.GetRelativePath(runtime, file).Split(Path.DirectorySeparatorChar);
+            if (!parts[0].Equals("Mods", StringComparison.OrdinalIgnoreCase))
+                return ownFolder || (parts.Length == 1 && OldUe4ssFiles.Contains(parts[0], StringComparer.OrdinalIgnoreCase));
+            return parts.Length < 3
+                || (parts[1].Equals(SharedFiles.Folder, StringComparison.OrdinalIgnoreCase)
+                    ? Ue4ssShared.Contains(parts[2], StringComparer.OrdinalIgnoreCase)
+                    : Ue4ssLogRules.BuiltIn.IsUe4ssMod(parts[1]));
+        }
+        return false;
     }
 
     /// <summary>

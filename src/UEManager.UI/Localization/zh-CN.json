@@ -799,5 +799,6 @@
   "Say in a few words what happened and what you did just before. The manager adds facts about the game, UE4SS and your mods, and leaves out your Windows user name. Nothing is sent by itself: copy the report and paste it where you ask for help, or post it on GitHub.": "请简要描述问题和发生前的操作。管理器会补充游戏、UE4SS 和模组信息，并隐藏您的 Windows 用户名。报告不会自动发送：可以复制后粘贴到你求助的地方，也可以点“去 GitHub 反馈”发给作者。",
   "Report on GitHub": "去 GitHub 反馈",
   "Copied. On the GitHub page that opened, press Ctrl+V to paste it, then post it. This needs a GitHub account.": "已复制。请在打开的 GitHub 页面里按 Ctrl+V 粘贴，然后提交。需要登录 GitHub 账号。",
-  "Press Ctrl+V here to paste the report, then post it.": "请在这里按 Ctrl+V 粘贴报告，然后提交。"
+  "Press Ctrl+V here to paste the report, then post it.": "请在这里按 Ctrl+V 粘贴报告，然后提交。",
+  "This download brings its own UE4SS. The manager leaves it out and installs the rest as a mod, so the UE4SS in your game stays as it is. If UE4SS is not in the game yet, install it on the Loaders page. If the mod does not work then, see its install notes.": "这个下载包里自带了 UE4SS。管理器不会装它，只把其余内容当作模组安装，游戏里现有的 UE4SS 不会被改动。如果游戏里还没装 UE4SS，请到“前置组件”页面安装。装好后模组仍不生效的话，请查看模组的安装说明。"
 }

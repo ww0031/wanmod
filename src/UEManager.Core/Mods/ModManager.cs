@@ -174,6 +174,8 @@ public sealed class ModManager
             problems.AddRange(package.Problems);
             warnings.AddRange(package.Warnings);
         }
+        if (preview.BringsUe4ss)
+            warnings.Add($"This download brings its own UE4SS. The manager leaves it out and installs the rest as a mod, so the UE4SS in your game stays as it is. If UE4SS is not in the game yet, install it on the Loaders page. If the mod does not work then, see its install notes.");
 
         // The two script loaders run together since Mods Menu 0.9.0 and PBZModLoader 2.1.0. An older one of either causes
         // problems with the other, so a known older version is worth a word. Only one of them can be the game's hid.dll.

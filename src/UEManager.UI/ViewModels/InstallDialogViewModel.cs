@@ -73,6 +73,30 @@ public sealed partial class InstallDialogViewModel : LocalizedObservableObject
             same.IsSelected = true;
     }
 
+    /// <summary>
+    /// Choosing a mod's parts again starts from the parts that are in the game now, not from every part: of variants
+    /// the ones the mod was installed with, of other parts those whose files the mod has. Without any, the ticks stay.
+    /// </summary>
+    public void SelectInstalled()
+    {
+        if (check?.Replaces is not { } old)
+            return;
+        var variants = $", {old.Variant}, ";
+        var installed = Packages
+            .Where(p => p.IsVariant
+                ? variants.Contains($", {p.Package.Variant}, ", StringComparison.OrdinalIgnoreCase)
+                : p.Package.RelativePaths.All(path => old.Files.Any(f => f.Target == p.Package.Target
+                    && string.Equals(f.FileName, path, StringComparison.OrdinalIgnoreCase))))
+            .ToList();
+        if (installed.Count == 0)
+            return;
+        selecting = true;
+        foreach (var option in Packages)
+            option.IsSelected = installed.Contains(option);
+        selecting = false;
+        Recheck();
+    }
+
     public Task<InstallChoice?> Result => result.Task;
 
     public string SourceFileName => preview.SourceFileName;
