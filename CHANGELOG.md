@@ -4,6 +4,11 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 3.4 (2026-11-26)
+- Black Myth: Wukong, WUCHANG: Fallen Feathers and Stellar Blade: installing UE4SS now takes the build made for the game. The general build, installed until now, closed these games right after they started
+- If the general build is already in the game: click "Update to…" on the Loaders page, and the game's own build replaces it
+- Black Myth: Wukong: "Launch game" now starts the game with -fileopenlog, which it needs to load mods, so you no longer enter it in Steam
+
 ## 3.3 (2026-11-20)
 - Browse: the next mods load by themselves when you scroll to the end, with no click on "Load more"
 - Browse: the order you chose last time is kept

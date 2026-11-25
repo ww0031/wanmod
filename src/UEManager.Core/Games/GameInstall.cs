@@ -84,15 +84,27 @@ public sealed record GameInstall(
             ?? FindShippingExecutable();
     }
 
-    /// <summary>Starts the game through its store when known, so DRM and overlays work as usual.</summary>
+    /// <summary>
+    /// Starts the game through its store when known, so DRM and overlays work as usual. A game that needs start
+    /// arguments to load mods (see <see cref="GameProfile.LaunchArguments"/>) starts from its own exe with them.
+    /// </summary>
     public void Launch()
     {
-        var target = LaunchUri ?? FindExecutable()
-            ?? throw new InvalidOperationException("No game executable was found in the install folder.");
-        Process.Start(new ProcessStartInfo(target)
+        var (target, arguments, folder) = LaunchCommand();
+        Process.Start(new ProcessStartInfo(target, arguments ?? "")
         {
             UseShellExecute = true,
-            WorkingDirectory = LaunchUri is null ? Path.GetDirectoryName(target) : null,
+            WorkingDirectory = folder,
         });
+    }
+
+    /// <summary>What <see cref="Launch"/> starts: a store's address, or an exe with its arguments and its folder.</summary>
+    internal (string Target, string? Arguments, string? Folder) LaunchCommand()
+    {
+        if (!string.IsNullOrWhiteSpace(Profile.LaunchArguments) && (FindShippingExecutable() ?? FindExecutable()) is { } exe)
+            return (exe, Profile.LaunchArguments, Path.GetDirectoryName(exe));
+        var target = LaunchUri ?? FindExecutable()
+            ?? throw new InvalidOperationException("No game executable was found in the install folder.");
+        return (target, null, LaunchUri is null ? Path.GetDirectoryName(target) : null);
     }
 }

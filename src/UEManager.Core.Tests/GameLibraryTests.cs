@@ -122,4 +122,55 @@ public class GameLibraryTests : IDisposable
         Assert.True(File.Exists(folder.Combine(@"Other\Mods\Shared\keep.txt")));
         Assert.True(Directory.Exists(folder.Combine(@"Other\Mods")));
     }
+
+    [Fact]
+    public void A_game_that_needs_its_own_ue4ss_build_keeps_its_id_and_is_known_by_its_steam_id_or_its_project_folder()
+    {
+        var steam = new LibraryGame { Id = "steam-2358720", Name = "Black Myth: Wukong", SteamAppId = "2358720", Unreal = true, ProjectFolder = "b1" }.ToProfile();
+        var picked = new LibraryGame { Id = "folder-0a1b2c", Name = "Wukong", Unreal = true, ProjectFolder = "B1" }.ToProfile();
+        var blade = new LibraryGame { Id = "epic-sb", Name = "Stellar Blade", Unreal = true, ProjectFolder = "SB" }.ToProfile();
+        var other = new LibraryGame { Id = "steam-100", Name = "Other", SteamAppId = "100", Unreal = true, ProjectFolder = "Shooter" }.ToProfile();
+        var generic = new LibraryGame { Id = "steam-2358720", Name = "Black Myth: Wukong", SteamAppId = "2358720" }.ToProfile();
+
+        Assert.Equal("steam-2358720", steam.Id);
+        Assert.Equal("black-myth-wukong", steam.Ue4ssGameId);
+        Assert.Equal("-fileopenlog", steam.LaunchArguments);
+        Assert.EndsWith("/blackmythwukong_ue4ss_v3.0.1-1195-g1ceefac8.zip", steam.Ue4ssPackageUrl);
+        Assert.Equal(64, steam.Ue4ssPackageSha256!.Length);
+        Assert.Equal(Ue4ssGame.Releases, steam.Ue4ssDownloadUrl);
+        Assert.Equal("folder-0a1b2c", picked.Id);
+        Assert.Equal("black-myth-wukong", picked.Ue4ssGameId);
+        Assert.Equal("stellar-blade", blade.Ue4ssGameId);
+        Assert.Equal("sb-ue4ss-1.3", blade.Ue4ssPackageVersion);
+        Assert.Null(blade.LaunchArguments);
+        Assert.Null(other.Ue4ssGameId);
+        Assert.Null(other.Ue4ssPackageUrl);
+        Assert.Null(other.Ue4ssDownloadUrl);
+        Assert.Null(other.LaunchArguments);
+        Assert.True(generic.Generic);
+        Assert.Null(generic.Ue4ssGameId);
+        Assert.Null(generic.LaunchArguments);
+    }
+
+    [Fact]
+    public void A_game_with_start_arguments_starts_from_its_own_exe_with_them_also_for_a_store_copy()
+    {
+        var root = folder.Game("b1", "Wukong");
+        var profile = new LibraryGame { Id = "steam-2358720", Name = "Black Myth: Wukong", RootPath = root, SteamAppId = "2358720", Unreal = true, ProjectFolder = "b1" }.ToProfile();
+        var exe = Path.Combine(root, "b1", "Binaries", "Win64", "b1-Win64-Shipping.exe");
+
+        var withArguments = GameLocator.Resolve(profile, root, GameStore.Steam, "1", SteamLibrary.LaunchUri("2358720"))!.LaunchCommand();
+        var plain = GameLocator.Resolve(TestFolder.Profile("b1"), root, GameStore.Steam, "1", SteamLibrary.LaunchUri("999999"))!.LaunchCommand();
+        var byHand = GameLocator.Resolve(TestFolder.Profile("b1"), root, GameStore.Manual)!.LaunchCommand();
+
+        Assert.Equal(exe, withArguments.Target);
+        Assert.Equal("-fileopenlog", withArguments.Arguments);
+        Assert.Equal(Path.GetDirectoryName(exe), withArguments.Folder);
+        Assert.Equal("steam://rungameid/999999", plain.Target);
+        Assert.Null(plain.Arguments);
+        Assert.Null(plain.Folder);
+        Assert.Equal(Path.Combine(root, "b1.exe"), byHand.Target);
+        Assert.Null(byHand.Arguments);
+        Assert.Equal(root, byHand.Folder);
+    }
 }

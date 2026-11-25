@@ -565,7 +565,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     public Ue4ssRelease? AvailableUe4ss => latestUe4ss
         ?? (string.IsNullOrWhiteSpace(Profile.Ue4ssPackageUrl)
             ? null
-            : new Ue4ssRelease(Ue4ssManifest.VersionFromFileName(Profile.Ue4ssPackageUrl) ?? "", Profile.Ue4ssPackageUrl, Profile.Ue4ssPackageSha256));
+            : new Ue4ssRelease(Profile.Ue4ssPackageVersion ?? Ue4ssManifest.VersionFromFileName(Profile.Ue4ssPackageUrl) ?? "",
+                Profile.Ue4ssPackageUrl, Profile.Ue4ssPackageSha256));
 
     public string Ue4ssModsPath => ue4ss switch
     {
@@ -1239,7 +1240,10 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             return;
         }
         var profile = Profile;
-        var answer = await Ue4ssManifest.FetchAsync(Http, urls, profile.Id);
+        var answer = await Ue4ssManifest.FetchAsync(Http, urls, profile.Ue4ssGameId ?? profile.Id);
+        // Only the UE4SS build is taken for a game known by another name there: the mods the manifest recommends for it are not offered.
+        if (profile.Ue4ssGameId is not null && answer is not null)
+            answer = answer with { Recommended = null };
         // Another game was opened meanwhile: its own check runs.
         if (profile != Profile)
             return;

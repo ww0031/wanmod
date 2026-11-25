@@ -78,8 +78,15 @@ public sealed class LibraryGame
         if (GameLibrary.BuiltIn.FirstOrDefault(p => p.Id == Id) is { } known)
             return known;
         var page = NexusDomain is { Length: > 0 } domain ? $"https://www.nexusmods.com/{domain}/mods/{{id}}" : null;
+        var ue4ss = Unreal ? Ue4ssGame.Find(SteamAppId, ProjectFolder) : null;
         return Unreal
-            ? new GameProfile { Id = Id, DisplayName = Name, SteamAppId = SteamAppId, ProjectFolder = ProjectFolder, ModPageUrl = page }
+            ? new GameProfile
+            {
+                Id = Id, DisplayName = Name, SteamAppId = SteamAppId, ProjectFolder = ProjectFolder, ModPageUrl = page,
+                Ue4ssGameId = ue4ss?.ManifestId, Ue4ssDownloadUrl = ue4ss is null ? null : Ue4ssGame.Releases,
+                Ue4ssPackageUrl = ue4ss?.PackageUrl, Ue4ssPackageSha256 = ue4ss?.PackageSha256, Ue4ssPackageVersion = ue4ss?.PackageVersion,
+                LaunchArguments = ue4ss?.LaunchArguments,
+            }
             : new GameProfile
             {
                 Id = Id, DisplayName = Name, SteamAppId = SteamAppId, Generic = true, ModPageUrl = page,

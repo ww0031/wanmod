@@ -80,6 +80,12 @@ public sealed class GameProfile
     public IReadOnlyList<string> Ue4ssManifestUrls { get; init; } = [];
 
     /// <summary>
+    /// The game's name in the UE4SS manifest when it is not <see cref="Id"/>, as for a game the library keeps under
+    /// "steam-&lt;app id&gt;" (see <see cref="Ue4ssGame"/>).
+    /// </summary>
+    public string? Ue4ssGameId { get; init; }
+
+    /// <summary>
     /// A fixed UE4SS release file (a zip) for one-click install when the manifest cannot be
     /// reached. Without either, the user downloads the file and picks it.
     /// </summary>
@@ -88,8 +94,17 @@ public sealed class GameProfile
     /// <summary>SHA-256 of that file. A download that does not match is refused.</summary>
     public string? Ue4ssPackageSha256 { get; init; }
 
+    /// <summary>The version of that file, as the manifest names it, when the file's name does not tell it.</summary>
+    public string? Ue4ssPackageVersion { get; init; }
+
     /// <summary>Started by "Launch game" when no store launcher is known, relative to the install folder.</summary>
     public string? Executable { get; init; }
+
+    /// <summary>
+    /// What the game must be started with to load mods, such as -fileopenlog. "Launch game" then starts the game's
+    /// own exe with it, also for a store's copy: a store's launch address takes no arguments.
+    /// </summary>
+    public string? LaunchArguments { get; init; }
 
     /// <summary>
     /// The folder holding the game's save files, for save backups: relative to the install folder, or a

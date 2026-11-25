@@ -2,6 +2,11 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 3.4 (2026-11-26)
+- Black Myth: Wukong, WUCHANG: Fallen Feathers và Stellar Blade: khi cài UE4SS, giờ sẽ cài bản dành riêng cho game đó. Trước đây cài bản chung, khiến game tự đóng ngay sau khi mở
+- Nếu game đã có bản chung: vào trang Trình nạp và bấm "Cập nhật lên…", bản dành riêng cho game sẽ thay thế nó
+- Black Myth: Wukong: "Khởi động game" giờ mở game kèm -fileopenlog, thứ game cần để tải mod, nên không phải nhập trong Steam nữa
+
 ## 3.3 (2026-11-20)
 - Duyệt Nexus: các mod tiếp theo tự tải khi bạn cuộn đến cuối, không cần bấm "Tải thêm"
 - Duyệt Nexus: thứ tự sắp xếp bạn chọn lần trước được ghi nhớ
