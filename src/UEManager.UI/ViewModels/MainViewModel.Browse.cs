@@ -70,6 +70,12 @@ public sealed partial class MainViewModel
         new(L.T("Compact"), ModsAsTable, new RelayCommand(() => SetModsCompact(true))),
     ];
 
+    /// <summary>
+    /// The button that puts the mods of a tag together, under a heading: on, the list goes by tag; off again, by name.
+    /// </summary>
+    public TagFilterItem GroupByTag => new(L.T("Group by tag"), SortField == ModSortField.Tag,
+        new RelayCommand(() => SortBy(SortField == ModSortField.Tag ? ModSortField.Name : ModSortField.Tag)));
+
     /// <summary>The cards' pictures, shared with the Browse page; null for a game with no Nexus Mods page.</summary>
     internal RemoteImages? Covers => Browse?.Images;
 
@@ -168,7 +174,7 @@ public sealed partial class MainViewModel
     {
         if (NexusBrowseViewModel.TranslationLanguage is not { } language)
             return;
-        var texts = NexusCards.Values.SelectMany(c => new[] { c.Name, c.Summary })
+        var texts = NexusCards.Values.SelectMany(c => new[] { c.Name, c.Summary, c.Category ?? "" })
             .Where(t => t.Length > 0 && !cardTexts.ContainsKey(language + "\n" + t)).Distinct(StringComparer.Ordinal).ToList();
         if (texts.Count == 0)
             return;

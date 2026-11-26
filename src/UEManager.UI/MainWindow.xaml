@@ -251,23 +251,42 @@
 
         <!-- ===== Message ===== -->
         <StackPanel Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,28,28" MaxWidth="480">
-        <!-- Downloads in the background: each with its progress and a way to stop it. -->
-        <ItemsControl ItemsSource="{Binding Downloads}">
+        <!-- The downloads in the background, in the order of their turns: one runs, the others wait. Each can be paused,
+             continued, moved to the front of the line, or taken out. A long line scrolls. -->
+        <ScrollViewer MaxHeight="372" HorizontalAlignment="Right" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                      Focusable="False">
+        <ScrollViewer.Effect>
+            <DropShadowEffect BlurRadius="24" ShadowDepth="0" Opacity="0.6" Color="Black" />
+        </ScrollViewer.Effect>
+        <ItemsControl ItemsSource="{Binding Downloads}" Focusable="False">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
                     <Border Width="360" Margin="0,0,0,8" Background="{StaticResource Brush.PanelSolid}" BorderBrush="{StaticResource Brush.LineStrong}"
                             BorderThickness="1" CornerRadius="2">
-                        <Border.Effect>
-                            <DropShadowEffect BlurRadius="24" ShadowDepth="0" Opacity="0.6" Color="Black" />
-                        </Border.Effect>
                         <DockPanel Margin="14,10,6,12">
-                            <Button DockPanel.Dock="Right" Style="{StaticResource Button.Icon}" Content="&#xE711;" FontFamily="{StaticResource Font.Icons}"
-                                    FontSize="10" Width="28" Height="28" VerticalAlignment="Top"
-                                    Command="{Binding CancelCommand}" ToolTip="{ui:Loc 'Stop the download'}" />
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                                <Button Style="{StaticResource Button.Icon}" Content="&#xE74A;" FontFamily="{StaticResource Font.Icons}"
+                                        FontSize="11" Width="28" Height="28"
+                                        Command="{Binding MoveFirstCommand}" ToolTip="{ui:Loc 'Download this one next'}"
+                                        Visibility="{Binding CanMoveFirst, Converter={StaticResource Visible}}" />
+                                <Button Style="{StaticResource Button.Icon}" Content="&#xE769;" FontFamily="{StaticResource Font.Icons}"
+                                        FontSize="11" Width="28" Height="28"
+                                        Command="{Binding PauseCommand}" ToolTip="{ui:Loc 'Pause the download'}"
+                                        Visibility="{Binding CanPause, Converter={StaticResource Visible}}" />
+                                <Button Style="{StaticResource Button.Icon}" Content="&#xE768;" FontFamily="{StaticResource Font.Icons}"
+                                        FontSize="11" Width="28" Height="28"
+                                        Command="{Binding ContinueCommand}" ToolTip="{Binding ContinueTip}"
+                                        Visibility="{Binding CanContinue, Converter={StaticResource Visible}}" />
+                                <Button Style="{StaticResource Button.Icon}" Content="&#xE711;" FontFamily="{StaticResource Font.Icons}"
+                                        FontSize="10" Width="28" Height="28"
+                                        Command="{Binding CancelCommand}" ToolTip="{ui:Loc 'Stop the download'}" />
+                            </StackPanel>
                             <StackPanel>
                                 <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Margin="0,2,0,8" Style="{StaticResource Text.Small}" Text="{Binding Detail}" />
-                                <Grid Height="3" Background="{StaticResource Brush.Line}">
+                                <TextBlock Margin="0,2,0,0" Style="{StaticResource Text.Small}" TextWrapping="Wrap" Text="{Binding Detail}"
+                                           Foreground="{Binding Tone, Converter={StaticResource Tone}}" />
+                                <Grid Height="3" Margin="0,8,0,0" Background="{StaticResource Brush.Line}"
+                                      Visibility="{Binding ShowsProgress, Converter={StaticResource Visible}}">
                                     <Border Background="{StaticResource Brush.Accent}" RenderTransformOrigin="0,0.5">
                                         <Border.RenderTransform>
                                             <ScaleTransform ScaleX="{Binding Share}" />
@@ -280,6 +299,7 @@
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
+        </ScrollViewer>
         <Border HorizontalAlignment="Right"
                 Background="{StaticResource Brush.PanelSolid}" BorderBrush="{StaticResource Brush.LineStrong}"
                 BorderThickness="1" CornerRadius="2"

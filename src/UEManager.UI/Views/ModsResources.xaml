@@ -36,6 +36,14 @@
         </Button>
     </DataTemplate>
 
+    <!-- The heading over a group of mods when the list goes by tag: the tag, and how many mods it has. -->
+    <DataTemplate x:Key="ModGroupHeader">
+        <StackPanel Orientation="Horizontal">
+            <TextBlock FontWeight="SemiBold" Foreground="{StaticResource Brush.Info}" Text="{Binding Name}" />
+            <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Style="{StaticResource Text.Small}" Text="{Binding ItemCount}" />
+        </StackPanel>
+    </DataTemplate>
+
     <!-- A mod's row: in the table, and for the recommended mod in its card above it. -->
     <DataTemplate x:Key="ModRow" DataType="{x:Type vm:ModItemViewModel}">
         <Border x:Name="Row" Padding="22,12" Background="Transparent"

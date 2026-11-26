@@ -59,8 +59,8 @@ public sealed class AppSettings
     public string? NexusApiKey { get; set; }
 
     /// <summary>
-    /// The Browse page lists adult content too. Off, and no window has it: it is set in the settings file by hand,
-    /// and written there only when on.
+    /// The Browse page lists adult content too. Off until the player turns it on in Settings, which asks first;
+    /// written to the settings file only when on.
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool ShowAdultContent { get; set; }

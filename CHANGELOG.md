@@ -4,6 +4,12 @@ What changed in each release of UE MM, newest first: one short line per change.
 The app shows this list (the **Changelog** link in the sidebar's update box), so
 every release adds its section at the top, as `## <version> (<yyyy-mm-dd>)`.
 
+## 3.5 (2026-11-26)
+- Downloads now wait in line and run one at a time, so they no longer share the speed; the bottom right shows the order, and you can move one to the front
+- A download can be paused and continued; one that failed stays in the list, and "Try again" goes on where it stopped, with no need to click on the site again
+- Mods page: the new "Group by tag" puts the mods with the same tag together; a mod with no tag goes by its category on Nexus Mods
+- Settings: a new switch, "Show adult content in Browse mods"; it is off by default and asks before it turns on
+
 ## 3.4 (2026-11-26)
 - Black Myth: Wukong, WUCHANG: Fallen Feathers and Stellar Blade: installing UE4SS now takes the build made for the game. The general build, installed until now, closed these games right after they started
 - If the general build is already in the game: click "Update to…" on the Loaders page, and the game's own build replaces it

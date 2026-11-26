@@ -96,7 +96,8 @@
                      Tag="{ui:Loc 'Filter: mod name, version, PAK / IoStore, file name or tag'}" />
         </DockPanel>
 
-        <!-- Which mods the list shows: by their state, and by the player's tags once a mod has one; on the right, cards or table. -->
+        <!-- Which mods the list shows: by their state, and by the player's tags once a mod has one; on the right, the mods
+             of a tag together or not, and cards or table. -->
         <DockPanel Margin="0,0,0,6" Visibility="{Binding HasFilterRow, Converter={StaticResource Visible}}">
             <ItemsControl DockPanel.Dock="Right" VerticalAlignment="Top" ItemsSource="{Binding ModsViewModes}" Focusable="False"
                           ItemTemplate="{StaticResource FilterButton}">
@@ -106,6 +107,9 @@
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
             </ItemsControl>
+            <ContentControl DockPanel.Dock="Right" Margin="0,0,8,0" VerticalAlignment="Top" Focusable="False"
+                            Content="{Binding GroupByTag}" ContentTemplate="{StaticResource FilterButton}"
+                            ToolTip="{ui:Loc 'Puts the mods with the same tag together. A mod you gave no tag goes by its category on Nexus Mods.'}" />
             <ItemsControl DockPanel.Dock="Left" VerticalAlignment="Top" ItemsSource="{Binding StateFilters}" Focusable="False"
                           ItemTemplate="{StaticResource FilterButton}">
                 <ItemsControl.ItemsPanel>
@@ -144,7 +148,17 @@
 
         <!-- Cards: the preview mode -->
         <StackPanel Visibility="{Binding ModsAsCards, Converter={StaticResource Visible}}">
-            <ItemsControl ItemsSource="{Binding ModsView}" Focusable="False" ItemTemplate="{StaticResource ModCard}" />
+            <ItemsControl ItemsSource="{Binding ModsView}" Focusable="False" ItemTemplate="{StaticResource ModCard}">
+                <ItemsControl.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.HeaderTemplate>
+                            <DataTemplate>
+                                <ContentControl Margin="2,4,0,10" Focusable="False" Content="{Binding}" ContentTemplate="{StaticResource ModGroupHeader}" />
+                            </DataTemplate>
+                        </GroupStyle.HeaderTemplate>
+                    </GroupStyle>
+                </ItemsControl.GroupStyle>
+            </ItemsControl>
             <Border Style="{StaticResource Card}" Padding="0,52" Visibility="{Binding ShowEmpty, Converter={StaticResource Visible}}">
                 <StackPanel HorizontalAlignment="Center">
                     <ContentControl Style="{StaticResource BrandMark}" Width="40" Height="40" Opacity="0.5" />
@@ -185,7 +199,19 @@
                 </Grid>
                 <Border Style="{StaticResource Divider}" />
 
-                <ItemsControl ItemsSource="{Binding ModsView}" Focusable="False" ItemTemplate="{StaticResource ModRow}" />
+                <ItemsControl ItemsSource="{Binding ModsView}" Focusable="False" ItemTemplate="{StaticResource ModRow}">
+                    <ItemsControl.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <Border Padding="22,10" Background="{StaticResource Brush.Field}" BorderBrush="{StaticResource Brush.Line}" BorderThickness="0,0,0,1">
+                                        <ContentControl Focusable="False" Content="{Binding}" ContentTemplate="{StaticResource ModGroupHeader}" />
+                                    </Border>
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </ItemsControl.GroupStyle>
+                </ItemsControl>
 
                 <StackPanel Margin="0,52" HorizontalAlignment="Center"
                             Visibility="{Binding ShowEmpty, Converter={StaticResource Visible}}">

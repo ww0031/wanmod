@@ -342,7 +342,8 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     public ICollectionView ModsView { get; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(NameSortGlyph), nameof(InstalledSortGlyph), nameof(StatusSortGlyph), nameof(TypeSortGlyph), nameof(IntegritySortGlyph))]
+    [NotifyPropertyChangedFor(nameof(NameSortGlyph), nameof(InstalledSortGlyph), nameof(StatusSortGlyph), nameof(TypeSortGlyph), nameof(IntegritySortGlyph),
+        nameof(GroupByTag))]
     private ModSortField sortField;
 
     [ObservableProperty]
@@ -903,8 +904,31 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         return choice;
     }
 
-    /// <summary>Downloads running in the background, shown at the bottom right of the window.</summary>
+    /// <summary>
+    /// The downloads in the background, shown at the bottom right of the window, in the order of their turns: one runs
+    /// at a time, so each has the whole connection, and the others wait.
+    /// </summary>
     public ObservableCollection<DownloadItemViewModel> Downloads { get; } = [];
+
+    /// <summary>Gives the first download that waits its turn when none runs, and tells the others their places.</summary>
+    internal void PumpDownloads()
+    {
+        if (!Downloads.Any(d => d.State == DownloadState.Running))
+            Downloads.FirstOrDefault(d => d.State == DownloadState.Waiting)?.Start();
+        var place = 0;
+        foreach (var waiting in Downloads.Where(d => d.State == DownloadState.Waiting))
+            waiting.ShowPlace(++place);
+    }
+
+    /// <summary>Puts a download that waits before the others that wait, so it is the next to start.</summary>
+    internal void MoveDownloadFirst(DownloadItemViewModel item)
+    {
+        var first = Downloads.FirstOrDefault(d => d.State == DownloadState.Waiting);
+        if (item.State != DownloadState.Waiting || first is null || first == item)
+            return;
+        Downloads.Move(Downloads.IndexOf(item), Downloads.IndexOf(first));
+        PumpDownloads();
+    }
 
     /// <summary>Finished downloads install one at a time.</summary>
     private readonly SemaphoreSlim installTurn = new(1, 1);
@@ -1012,7 +1036,9 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     }
 
     /// <summary>
-    /// One click on a mod's release: download the file in the background, check its size and checksum, and install it.
+    /// One click on a mod's release: download the file in the background, when its turn in the line comes, check its
+    /// size and checksum, and install it. A download that was paused or had a problem stays in the line with what has
+    /// arrived, and goes on after it; a new click on the same file continues it, with the newer link.
     /// A download that needs a choice or a look first opens the install review instead: variants, warnings, a mod
     /// installed by hand that it would replace, or settings the player changed. The download is deleted once the mod
     /// is in, unless the mod has parts to choose from: then it is stored for choosing again. A cancelled review or a
@@ -1026,9 +1052,16 @@ public sealed partial class MainViewModel : LocalizedObservableObject
     {
         if (!EnsureGame())
             return;
-        if (Downloads.Any(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase)))
+        if (Downloads.FirstOrDefault(d => string.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase)) is { } queued)
         {
-            ShowToast(L.F($"{name} is already downloading."));
+            if (queued.CanContinue && queued.FileName == fileName)
+            {
+                if (urls.Count > 0)
+                    queued.Urls = urls;
+                queued.ContinueCommand.Execute(null);
+            }
+            else
+                ShowToast(L.F($"{name} is already downloading."));
             return;
         }
         var download = FileDownloader.PathIn(DownloadsDir, fileName);
@@ -1038,26 +1071,44 @@ public sealed partial class MainViewModel : LocalizedObservableObject
             Log.Info($"Installing '{download}', downloaded before.");
         else
         {
-            var item = new DownloadItemViewModel(id, name, size > 0 ? size : shownSize);
+            var item = new DownloadItemViewModel(id, name, fileName, size > 0 ? size : shownSize, PumpDownloads, MoveDownloadFirst) { Urls = urls };
             Downloads.Add(item);
+            PumpDownloads();
             try
             {
-                download = await FileDownloader.DownloadAsync(Http, urls, fileName, size, sha256, DownloadsDir, name, new Progress<double>(item.Report), item.Token);
-            }
-            catch (Exception ex) when (ex is ModException or IOException or UnauthorizedAccessException)
-            {
-                if (item.Token.IsCancellationRequested)
-                    ShowToast(L.F($"Stopped downloading {name}."));
-                else
+                while (true)
                 {
-                    Log.Warn(ex.Message);
-                    ShowToast(ex is ModException mod ? L.Message(mod) : L.F($"Something went wrong: {ex.Message}"), isError: true);
+                    await item.WaitForTurnAsync();
+                    var transfer = item.TransferToken;
+                    try
+                    {
+                        download = await FileDownloader.DownloadAsync(Http, item.Urls, fileName, size, sha256, DownloadsDir, name,
+                            new Progress<double>(item.Report), transfer, resume: true);
+                        break;
+                    }
+                    catch (Exception ex) when (ex is ModException or IOException or UnauthorizedAccessException)
+                    {
+                        item.Token.ThrowIfCancellationRequested();
+                        // A pause ends the transfer too; anything else is a problem, and the download waits for another try.
+                        if (!transfer.IsCancellationRequested)
+                        {
+                            Log.Warn(ex.Message);
+                            item.Fail(ex is ModException mod ? L.Message(mod) : L.F($"Something went wrong: {ex.Message}"));
+                        }
+                    }
+                    PumpDownloads();
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                TryDeleteFile(FileDownloader.PathIn(DownloadsDir, fileName) + FileDownloader.PartExtension);
+                ShowToast(L.F($"Stopped downloading {name}."));
                 return;
             }
             finally
             {
                 Downloads.Remove(item);
+                PumpDownloads();
             }
         }
 
@@ -1895,7 +1946,16 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         TagFilters = tags.Count == 0 ? [] : [Filter(L.T("All tags"), null), .. tags.Select(entry => Filter($"{entry.Tag} ({entry.Count})", entry.Tag))];
     }
 
-    private void ApplySort() => ((ListCollectionView)ModsView).CustomSort = new ModOrder(SortField, SortDescending);
+    /// <summary>By tag, each group of mods also gets a heading; a tag is one group however it is written, as for the tag buttons.</summary>
+    private void ApplySort()
+    {
+        var view = (ListCollectionView)ModsView;
+        view.CustomSort = new ModOrder(SortField, SortDescending);
+        if (SortField != ModSortField.Tag)
+            view.GroupDescriptions.Clear();
+        else if (view.GroupDescriptions.Count == 0)
+            view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(ModItemViewModel.GroupName), null, StringComparison.OrdinalIgnoreCase));
+    }
 
     /// <summary>An arrow on the sorted column; a quiet dash on the other one, so it reads as sortable too.</summary>
     private string SortGlyph(ModSortField field) =>
@@ -2145,8 +2205,32 @@ public sealed partial class MainViewModel : LocalizedObservableObject
         }
     }
 
-    /// <summary>See <see cref="AppSettings.ShowAdultContent"/>.</summary>
-    internal bool ShowAdultContent => settings.ShowAdultContent;
+    /// <summary>
+    /// See <see cref="AppSettings.ShowAdultContent"/>; the box in Settings. Turning it on asks first, and it stays off
+    /// unless the player confirms.
+    /// </summary>
+    public bool ShowAdultContent
+    {
+        get => settings.ShowAdultContent;
+        set
+        {
+            if (value != settings.ShowAdultContent)
+                _ = SetAdultContentAsync(value);
+        }
+    }
+
+    private async Task SetAdultContentAsync(bool show)
+    {
+        if (!show || await AskAsync(L.T("Show adult content?"),
+                L.T("When this is on, Browse mods also lists the mods that Nexus Mods marks as adult content.\n\nTurn it on only when all of this is true:\n•  You are 18 or older.\n•  You are not in mainland China, and the law where you live allows you to view such content.\n•  You know this content comes from Nexus Mods and not from this app, and you alone answer for viewing it.\n\nIn mainland China, leave this off. You can turn it off again in Settings at any time."),
+                L.T("I confirm, turn it on"), width: 560))
+        {
+            settings.ShowAdultContent = show;
+            SaveSettings();
+            browse?.AdultContentChanged();
+        }
+        OnPropertyChanged(nameof(ShowAdultContent));
+    }
 
     /// <summary>See <see cref="AppSettings.BrowseSort"/>.</summary>
     internal NexusSort BrowseSort

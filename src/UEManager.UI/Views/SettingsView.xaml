@@ -98,6 +98,8 @@
                     <TextBlock Style="{StaticResource FieldLabel}" Text="{ui:Loc 'Download links'}" />
                     <TextBlock Style="{StaticResource Text.Small}" Foreground="{StaticResource Brush.Text}" TextWrapping="Wrap" Text="{Binding NxmHandlerText}" />
                 </DockPanel>
+                <CheckBox Margin="0,6,0,4" Content="{ui:Loc 'Show adult content in Browse mods'}"
+                          IsChecked="{Binding ShowAdultContent}" />
                 <WrapPanel Margin="0,10,0,0">
                     <Button Style="{StaticResource Button.Primary}" Content="{ui:Loc 'Get your API key'}" ui:Icon.Glyph="&#xE774;"
                             Command="{Binding OpenNexusApiKeyPageCommand}" />

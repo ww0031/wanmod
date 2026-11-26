@@ -100,6 +100,16 @@ public sealed partial class ModItemViewModel : LocalizedObservableObject
     /// <summary>The player's tags, on a line of their own below <see cref="Detail"/>; null with none, so the line stays away.</summary>
     public string? TagsText => record.Tags is { Count: > 0 } ? ModTags.Join(record.Tags) : null;
 
+    /// <summary>
+    /// What the list groups the mod by: the first of the player's tags; without one, the mod's category on Nexus Mods
+    /// in the app's language, so mods sort themselves into groups before the player tags any. Null with neither.
+    /// </summary>
+    public string? Group => record.Tags is [var first, ..] ? first
+        : card is { Category.Length: > 0 } ? owner.CardText(card.Category) : null;
+
+    /// <summary>The heading over the mod's group.</summary>
+    public string GroupName => Group ?? L.T("No tag");
+
     /// <summary>The mods on the card stand apart from the list that tags filter, so they have no tags to add.</summary>
     public bool CanTag => !record.Recommended;
 

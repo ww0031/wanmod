@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Http.Headers;
 using UEManager.Core.Mods;
 
 namespace UEManager.Core;
@@ -14,14 +16,15 @@ public static class FileDownloader
     /// </summary>
     /// <exception cref="ModException">No address gave the file: the last one's problem.</exception>
     public static async Task<string> DownloadAsync(HttpClient http, IReadOnlyList<string> urls, string fileName, long? expectedSize,
-        string? expectedSha256, string folder, string what, IProgress<double>? progress = null, CancellationToken cancellation = default)
+        string? expectedSha256, string folder, string what, IProgress<double>? progress = null, CancellationToken cancellation = default,
+        bool resume = false)
     {
         ModException? last = null;
         foreach (var url in urls)
         {
             try
             {
-                return await DownloadAsync(http, url, fileName, expectedSize, expectedSha256, folder, what, progress, cancellation);
+                return await DownloadAsync(http, url, fileName, expectedSize, expectedSha256, folder, what, progress, cancellation, resume: resume);
             }
             catch (ModException ex) when (!cancellation.IsCancellationRequested)
             {
@@ -48,9 +51,13 @@ public static class FileDownloader
     /// <param name="expectedSize">The size in bytes, or null (or 0) when it is not known.</param>
     /// <param name="what">What is downloaded, for messages: "UE4SS", or a mod's name.</param>
     /// <param name="stallTimeout">How long the download may receive no data; <see cref="DefaultStallTimeout"/> when null.</param>
+    /// <param name="resume">
+    /// The part of a download that was stopped, failed or stalled stays, and the next try with the same name goes on
+    /// after it where the server allows that. The caller deletes a part it gives up.
+    /// </param>
     public static async Task<string> DownloadAsync(HttpClient http, string url, string fileName, long? expectedSize,
         string? expectedSha256, string folder, string what, IProgress<double>? progress = null, CancellationToken cancellation = default,
-        TimeSpan? stallTimeout = null)
+        TimeSpan? stallTimeout = null, bool resume = false)
     {
         Directory.CreateDirectory(folder);
         var target = PathIn(folder, fileName);
@@ -61,15 +68,28 @@ public static class FileDownloader
         try
         {
             stall.CancelAfter(limit);
-            using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, stall.Token);
+            var have = resume && File.Exists(part) ? new FileInfo(part).Length : 0;
+            var response = await GetAsync(http, url, have, stall.Token);
+            if (have > 0 && response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
+            {
+                // The part is no start of this file: the file comes whole again.
+                response.Dispose();
+                have = 0;
+                response = await GetAsync(http, url, 0, stall.Token);
+            }
+            using var answer = response;
             if (!response.IsSuccessStatusCode)
                 throw new ModException($"{what} could not be downloaded: the server answered {(int)response.StatusCode} {response.ReasonPhrase}.");
-            var total = response.Content.Headers.ContentLength ?? expectedSize;
+            // A server that does not go on after the part sends the whole file, which then replaces the part.
+            if (response.StatusCode != HttpStatusCode.PartialContent || response.Content.Headers.ContentRange?.From != have)
+                have = 0;
+            var total = (have > 0 ? response.Content.Headers.ContentRange?.Length ?? have + response.Content.Headers.ContentLength
+                : response.Content.Headers.ContentLength) ?? expectedSize;
             await using (var input = await response.Content.ReadAsStreamAsync(stall.Token))
-            await using (var output = File.Create(part))
+            await using (var output = new FileStream(part, have > 0 ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.None))
             {
                 var buffer = new byte[81920];
-                long done = 0;
+                var done = have;
                 int read;
                 stall.CancelAfter(limit);
                 while ((read = await input.ReadAsync(buffer, stall.Token)) > 0)
@@ -84,12 +104,14 @@ public static class FileDownloader
         }
         catch (OperationCanceledException) when (!cancellation.IsCancellationRequested)
         {
-            FileSystem.TryDeleteFile(part);
+            if (!resume)
+                FileSystem.TryDeleteFile(part);
             throw new ModException($"{what} could not be downloaded: no data arrived for {limit.TotalSeconds:0} seconds. Check the connection, then try again.");
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or OperationCanceledException)
         {
-            FileSystem.TryDeleteFile(part);
+            if (!resume)
+                FileSystem.TryDeleteFile(part);
             throw new ModException($"{what} could not be downloaded: {ex.Message}");
         }
 
@@ -108,5 +130,14 @@ public static class FileDownloader
         File.Move(part, target, overwrite: true);
         Log.Info($"Downloaded '{url}' to '{target}'.");
         return target;
+    }
+
+    /// <summary>Asks for the file from <paramref name="from"/> on; from its start with 0.</summary>
+    private static Task<HttpResponseMessage> GetAsync(HttpClient http, string url, long from, CancellationToken cancellation)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        if (from > 0)
+            request.Headers.Range = new RangeHeaderValue(from, null);
+        return http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellation);
     }
 }

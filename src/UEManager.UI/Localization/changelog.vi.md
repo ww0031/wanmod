@@ -2,6 +2,12 @@
 
 Bản tiếng Việt của CHANGELOG.md: giữ nguyên tiêu đề, mỗi thay đổi một dòng. Phiên bản chưa dịch hiển thị bằng tiếng Anh.
 
+## 3.5 (2026-11-26)
+- Tải xuống giờ xếp hàng và chạy từng mục một, nên tốc độ không còn bị chia cho nhiều lượt tải; góc dưới bên phải cho thấy thứ tự chờ, và bạn có thể đưa một mục lên đầu
+- Có thể tạm dừng và tiếp tục tải xuống; lượt tải bị lỗi vẫn ở lại trong danh sách, bấm "Thử lại" là tải tiếp từ chỗ dừng, không phải quay lại trang web bấm lại
+- Trang Mod có thêm "Nhóm theo nhãn": các mod cùng nhãn được xếp cạnh nhau; mod chưa gắn nhãn sẽ theo danh mục của nó trên Nexus Mods
+- Cài đặt có thêm công tắc "Hiện nội dung người lớn trong trang duyệt mod", mặc định tắt và hỏi xác nhận trước khi bật
+
 ## 3.4 (2026-11-26)
 - Black Myth: Wukong, WUCHANG: Fallen Feathers và Stellar Blade: khi cài UE4SS, giờ sẽ cài bản dành riêng cho game đó. Trước đây cài bản chung, khiến game tự đóng ngay sau khi mở
 - Nếu game đã có bản chung: vào trang Trình nạp và bấm "Cập nhật lên…", bản dành riêng cho game sẽ thay thế nó

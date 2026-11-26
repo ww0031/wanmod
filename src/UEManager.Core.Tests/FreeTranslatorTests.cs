@@ -144,6 +144,24 @@ public class FreeTranslatorTests
         Assert.Contains("\"target\":{\"lang\":\"zh\"}", service.LastBody);
     }
 
+    [Fact]
+    public async Task A_category_the_services_get_wrong_alone_has_its_Chinese_name_and_is_not_sent()
+    {
+        using var folder = new TestFolder();
+        var file = folder.Combine("translations.json");
+        var service = new Service(HttpStatusCode.OK, """["你好","en"]""");
+
+        var simplified = await Google(service, file).TranslateAsync(["Characters", "Hello", "Utilities"], "zh-CN");
+        var traditional = await Google(service, file).TranslateAsync(["Utilities", "Save Games"], "zh-TW");
+
+        Assert.Equal(["角色", "你好", "实用工具"], simplified);
+        Assert.Equal(["實用工具", "存檔"], traditional);
+        Assert.Equal(1, service.Requests);
+        Assert.Equal("q=Hello", service.LastBody);
+        Assert.Null(FreeTranslator.SiteWord("Characters", "vi"));
+        Assert.Null(FreeTranslator.SiteWord("New Characters", "zh-CN"));
+    }
+
     private static FreeTranslator Google(HttpMessageHandler service, string file) =>
         new(new HttpClient(service), file) { Service = TranslationService.Google };
 

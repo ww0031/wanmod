@@ -56,7 +56,8 @@ public sealed partial class FreeTranslator(HttpClient http, string cacheFile)
         lock (sync)
         {
             var known = cache ??= Load();
-            missing = texts.Where(t => NeedsTranslation(t, language) && !known.ContainsKey(Key(language, t))).Distinct(StringComparer.Ordinal).ToList();
+            missing = texts.Where(t => NeedsTranslation(t, language) && SiteWord(t, language) is null && !known.ContainsKey(Key(language, t)))
+                .Distinct(StringComparer.Ordinal).ToList();
         }
         try
         {
@@ -77,8 +78,24 @@ public sealed partial class FreeTranslator(HttpClient http, string cacheFile)
                 Save();
         }
         lock (sync)
-            return texts.Select(t => cache!.TryGetValue(Key(language, t), out var done) ? GameName(done, language) : t).ToList();
+            return texts.Select(t => SiteWord(t, language) ?? (cache!.TryGetValue(Key(language, t), out var done) ? GameName(done, language) : t)).ToList();
     }
+
+    /// <summary>Categories of the mod site that the services get wrong as a word alone, such as 字符 for Characters: their Chinese names.</summary>
+    private static readonly Dictionary<string, (string Simplified, string Traditional)> SiteWords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Characters"] = ("角色", "角色"),
+        ["Utilities"] = ("实用工具", "實用工具"),
+        ["Cheats"] = ("作弊", "作弊"),
+        ["Items"] = ("物品", "物品"),
+        ["Save Games"] = ("存档", "存檔"),
+    };
+
+    /// <summary>The Chinese name of a text that is one of <see cref="SiteWords"/> and no more; else null.</summary>
+    internal static string? SiteWord(string text, string language) =>
+        language.StartsWith("zh", StringComparison.OrdinalIgnoreCase) && SiteWords.TryGetValue(text.Trim(), out var names)
+            ? language.Equals("zh-TW", StringComparison.OrdinalIgnoreCase) ? names.Traditional : names.Simplified
+            : null;
 
     /// <summary>
     /// A Chinese translation with the game's Chinese name, 影之刃零, where the service wrote a name of its own, such as

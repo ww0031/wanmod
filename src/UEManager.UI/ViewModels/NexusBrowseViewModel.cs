@@ -13,7 +13,7 @@ namespace UEManager.UI.ViewModels;
 /// <summary>
 /// The Browse page: the game's mods on Nexus Mods, a page at a time, with their names, summaries and descriptions
 /// translated for free into the app's language. Adult content is not shown (see <see cref="NexusMods.ListModsAsync"/>),
-/// unless the settings file allows it (see <see cref="UEManager.Core.Storage.AppSettings.ShowAdultContent"/>).
+/// unless the player turned it on in Settings (see <see cref="UEManager.Core.Storage.AppSettings.ShowAdultContent"/>).
 /// </summary>
 public sealed partial class NexusBrowseViewModel : LocalizedObservableObject
 {
@@ -48,6 +48,14 @@ public sealed partial class NexusBrowseViewModel : LocalizedObservableObject
         : L.F($"Adult content is never shown here. Texts are translated for free by {MainViewModel.ServiceName(translator.First)}.");
 
     internal void RefreshServiceNote() => OnPropertyChanged(nameof(ServiceNote));
+
+    /// <summary>The player turned adult content on or off: the line says so, and a list already read is read again.</summary>
+    internal void AdultContentChanged()
+    {
+        RefreshServiceNote();
+        if (loaded || IsLoading)
+            _ = LoadPageAsync(reset: true);
+    }
 
     internal RemoteImages Images { get; }
 
